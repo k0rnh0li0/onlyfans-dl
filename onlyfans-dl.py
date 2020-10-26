@@ -163,5 +163,8 @@ if __name__ == "__main__":
 
     # iterate over posts, downloading all media
     for post in posts:
+        if not post["canViewMedia"]:
+            continue
+
         for media in post["media"]:
             download_media(media)
