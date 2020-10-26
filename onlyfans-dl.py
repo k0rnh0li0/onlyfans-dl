@@ -4,6 +4,9 @@
 # KORNHOLIO 2020
 #
 # See README for help/info.
+#
+# This program is Free Software, licensed under the
+# terms of GPLv3. See LICENSE.txt for details.
 
 import re
 import os
