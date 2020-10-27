@@ -9,8 +9,6 @@ Each profile you download will be stored as a subdirectory of `profiles`.
 Inside each profile directory, some information will be saved in `info.json`,
 and all media will be downloaded to `photos/` and `videos/`.
 
-![](coomer.gif)
-
 ## Usage
 `./onlyfans-dl.py <profile> <accessToken>`
 * `<profile>` - the username of the profile to download
