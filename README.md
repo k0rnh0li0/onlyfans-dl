@@ -18,11 +18,12 @@ and all media will be downloaded to `photos/` and `videos/`.
 OnlyFans does a bunch of captcha schit in the login, so I wasn't able to automate the login
 process. It's very easy to get your auth token though, here's how:
 
-1. Open your browser.
-2. Login to OnlyFans as normal.
-3. Once you have logged in, open the web console. (Press F12 and click "Console")
-4. Type `localStorage.getItem("accessToken");` and press Enter.
-5. Copy the string between the quotes, that's your access token.
+- Open your browser.
+- After check the value of your User-Agent(you can this [here]("whatismybrowser.com/detect/what-is-my-user-agent"), copy it. and put it in the value of the *User-Agent* key of *API_HEADER* in ./onlyfans-dl.py
+- Login to OnlyFans as normal.
+- Once you have logged in, open the web console. (Press F12 and click "Console")
+- Type `localStorage.getItem("accessToken");` and press Enter.
+- Copy the string between the quotes, that's your access token.
 
 Once you have your access token, don't logout or otherwise end your session until you have
 finished downloading content with onlyfans-dl.
