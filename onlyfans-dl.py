@@ -16,7 +16,8 @@ import shutil
 import requests
 
 # maximum number of posts to index
-POST_LIMIT = "999"
+# DONT CHANGE THAT
+POST_LIMIT = "100"
 
 # api info
 URL = "https://onlyfans.com"
@@ -37,7 +38,7 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
     "Accept-Encoding": "gzip, deflate"
 }
 
@@ -47,13 +48,46 @@ def api_request(endpoint, getdata = None, postdata = None):
     getparams = {
         "app-token": APP_TOKEN
     }
-
     if getdata is not None:
         for i in getdata:
             getparams[i] = getdata[i]
 
     if postdata is None:
-        return requests.get(URL + API_URL + endpoint,
+        if getdata is not None:
+        	#Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
+            ########
+            #First 100 or less posts 
+            list_base=requests.get(URL + API_URL + endpoint,
+                            headers=API_HEADER,
+                            params=getparams).json()
+            posts_num=len(list_base)
+            #If posts are more then 100 execute the "pagination" fix
+            if posts_num>=100:
+            	#Extracting 'postedAtPrecise' (unix datetime) of 100th post
+            	#i can add a get params for extract the next 100 posts
+                #########
+                #Extract unix datetime 'postedAtPrecise'
+                beforePublishTime=list_base[99]['postedAtPrecise']
+                #Add 'get params' 'beforePublishTime'
+                getparams['beforePublishTime']=beforePublishTime
+                #Loop every posts
+                while posts_num==100:
+                	#Extract posts
+                    list_extend=requests.get(URL + API_URL + endpoint,
+                            headers=API_HEADER,
+                            params=getparams).json()
+                    posts_num=len(list_extend)
+                    #Re-add again the updated beforePublishTime/postedAtPrecise params
+                    beforePublishTime=list_extend[posts_num-1]['postedAtPrecise']
+                    getparams['beforePublishTime']=beforePublishTime
+                    #Merge with previous posts
+                    list_base.extend(list_extend)
+                    #Loop end when the number off posts if minor of 100 so is the last page
+                    if posts_num<100:
+                        break
+            return list_base
+        else:
+            return requests.get(URL + API_URL + endpoint,
                             headers=API_HEADER,
                             params=getparams)
     else:
@@ -74,6 +108,7 @@ def get_user_info(profile):
     return info
 
 # download a media item and save it to the relevant directory
+new_files=0
 def download_media(media):
     id = str(media["id"])
     source = media["source"]["source"]
@@ -88,11 +123,16 @@ def download_media(media):
     ext = ext[0][:-1]
 
     path = "/" + media["type"] + "s/" + id + ext
-    print(path)
-    r = requests.get(source, stream=True)
-    with open("profiles/" + PROFILE + path, 'wb') as f:
-        r.raw.decode_content = True
-        shutil.copyfileobj(r.raw, f)
+    if os.path.isfile("profiles/" + PROFILE + path):
+        print (path + " - File exist")
+    else:
+        print (path + " - New File")
+        global new_files
+        new_files += 1
+        r = requests.get(source, stream=True)
+        with open("profiles/" + PROFILE + path, 'wb') as f:
+            r.raw.decode_content = True
+            shutil.copyfileobj(r.raw, f)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -120,19 +160,18 @@ if __name__ == "__main__":
     PROFILE_INFO = get_user_info(PROFILE)
     PROFILE_ID = str(PROFILE_INFO["id"])
 
-    print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
+    print("\nOnlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
     if not os.path.isdir("profiles"):
         os.mkdir("profiles")
 
     if os.path.isdir("profiles/" + PROFILE):
-        print("\nERROR: profiles/" + PROFILE + " exists.")
-        print("       Please remove it and try again.")
-        exit()
-
-    os.mkdir("profiles/" + PROFILE)
-    os.mkdir("profiles/" + PROFILE + "/photos")
-    os.mkdir("profiles/" + PROFILE + "/videos")
+        print("\nProfiles/" + PROFILE + " exists.")
+        print("Media already present will not be re-download")
+    else:
+        os.mkdir("profiles/" + PROFILE)
+        os.mkdir("profiles/" + PROFILE + "/photos")
+        os.mkdir("profiles/" + PROFILE + "/videos")
 
     # first save profile info
     print("Saving profile info...")
@@ -154,8 +193,7 @@ if __name__ == "__main__":
 
     # get all user posts
     print("Finding posts...")
-    posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT}).json()
-
+    posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
     if len(posts) == 0:
         print("ERROR: 0 posts found.")
         exit()
@@ -168,4 +206,7 @@ if __name__ == "__main__":
             continue
 
         for media in post["media"]:
-            download_media(media)
+        	#Prevent that in some rare case media don't have source and the script stuck
+            if 'source' in media:
+            	download_media(media)
+    print("Total new downloaded media are " + str(new_files))        
