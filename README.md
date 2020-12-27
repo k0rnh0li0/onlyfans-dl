@@ -19,7 +19,8 @@ OnlyFans does a bunch of captcha schit in the login, so I wasn't able to automat
 process. It's very easy to get your auth token though, here's how:
 
 - Open your browser.
-- After check the value of your User-Agent(you can this [here]("whatismybrowser.com/detect/what-is-my-user-agent"), copy it. and put it in the value of the *User-Agent* key of *API_HEADER* in ./onlyfans-dl.py
+- After check the value of your User-Agent (you can do this [here]("whatismybrowser.com/detect/what-is-my-user-agent")),
+copy it, and put it in the value of the `User-Agent` key of `API_HEADER` in `onlyfans-dl.py`.
 - Login to OnlyFans as normal.
 - Once you have logged in, open the web console. (Press F12 and click "Console")
 - Type `localStorage.getItem("accessToken");` and press Enter.
