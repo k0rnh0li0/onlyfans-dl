@@ -119,7 +119,7 @@ def download_media(media):
 
     path = "/" + media["type"] + "s/" + id + ext
     if not os.path.isfile("profiles/" + PROFILE + path):
-        print (path + " - New File")
+        print(path)
         global new_files
         new_files += 1
         r = requests.get(source, stream=True)
