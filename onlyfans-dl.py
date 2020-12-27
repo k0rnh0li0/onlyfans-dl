@@ -54,36 +54,31 @@ def api_request(endpoint, getdata = None, postdata = None):
 
     if postdata is None:
         if getdata is not None:
-        	#Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
-            ########
-            #First 100 or less posts 
-            list_base=requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams).json()
-            posts_num=len(list_base)
-            #If posts are more then 100 execute the "pagination" fix
-            if posts_num>=100:
-            	#Extracting 'postedAtPrecise' (unix datetime) of 100th post
-            	#i can add a get params for extract the next 100 posts
-                #########
-                #Extract unix datetime 'postedAtPrecise'
-                beforePublishTime=list_base[99]['postedAtPrecise']
-                #Add 'get params' 'beforePublishTime'
-                getparams['beforePublishTime']=beforePublishTime
-                #Loop every posts
-                while posts_num==100:
-                	#Extract posts
-                    list_extend=requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams).json()
-                    posts_num=len(list_extend)
-                    #Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime=list_extend[posts_num-1]['postedAtPrecise']
-                    getparams['beforePublishTime']=beforePublishTime
-                    #Merge with previous posts
+            # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
+
+            list_base = requests.get(URL + API_URL + endpoint,
+                        headers=API_HEADER,
+                        params=getparams).json()
+            posts_num = len(list_base)
+
+            if posts_num >= 100:
+                beforePublishTime = list_base[99]['postedAtPrecise']
+                getparams['beforePublishTime'] = beforePublishTime
+
+                while posts_num == 100:
+                    # Extract posts
+                    list_extend = requests.get(URL + API_URL + endpoint,
+                                    headers=API_HEADER,
+                                    params=getparams).json()
+                    posts_num = len(list_extend)
+
+                    # Re-add again the updated beforePublishTime/postedAtPrecise params
+                    beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
+                    getparams['beforePublishTime'] = beforePublishTime
+                    # Merge with previous posts
                     list_base.extend(list_extend)
-                    #Loop end when the number off posts if minor of 100 so is the last page
-                    if posts_num<100:
+
+                    if posts_num < 100:
                         break
             return list_base
         else:
@@ -123,9 +118,7 @@ def download_media(media):
     ext = ext[0][:-1]
 
     path = "/" + media["type"] + "s/" + id + ext
-    if os.path.isfile("profiles/" + PROFILE + path):
-        print (path + " - File exist")
-    else:
+    if not os.path.isfile("profiles/" + PROFILE + path):
         print (path + " - New File")
         global new_files
         new_files += 1
@@ -160,14 +153,14 @@ if __name__ == "__main__":
     PROFILE_INFO = get_user_info(PROFILE)
     PROFILE_ID = str(PROFILE_INFO["id"])
 
-    print("\nOnlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
+    print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
     if not os.path.isdir("profiles"):
         os.mkdir("profiles")
 
     if os.path.isdir("profiles/" + PROFILE):
         print("\nProfiles/" + PROFILE + " exists.")
-        print("Media already present will not be re-download")
+        print("Media already present will not be re-downloaded.")
     else:
         os.mkdir("profiles/" + PROFILE)
         os.mkdir("profiles/" + PROFILE + "/photos")
@@ -206,7 +199,6 @@ if __name__ == "__main__":
             continue
 
         for media in post["media"]:
-        	#Prevent that in some rare case media don't have source and the script stuck
             if 'source' in media:
             	download_media(media)
-    print("Total new downloaded media are " + str(new_files))        
+    print("Downloaded " + str(new_files) + " new files.")
