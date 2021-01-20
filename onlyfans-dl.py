@@ -184,6 +184,20 @@ if __name__ == "__main__":
     with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
         json.dump(sinf, infojson)
 
+    # get all paid posts
+    print("Finding paid posts...")
+
+    posts = api_request("/posts/paid", getdata={"limit": 10}) # idk they limit it to 10 whatever...
+    if len(posts) == 0:
+        print("No paid posts found, give this girl some money :D")
+    else:
+        print("Found " + str(len(posts)) + " paid posts. Downloading media...")
+        # note that we dont need to check for viewable media here
+        for post in posts:
+            for media in post["media"]:
+                if 'source' in media:
+            	    download_media(media)
+
     # get all user posts
     print("Finding posts...")
     posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
