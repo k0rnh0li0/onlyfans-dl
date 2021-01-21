@@ -15,14 +15,31 @@ import json
 import shutil
 import requests
 
-# maximum number of posts to index
-# DONT CHANGE THAT
-POST_LIMIT = "100"
-ARCHIVED_POST_LIMIT = "100"
-STORY_LIMIT = "100"
-HIGHLIGHT_LIMIT = "100"
-MESSAGE_LIMIT = "10"
-PURCHASE_LIMIT = "100"
+###########################
+# THING YOU CAN CONFIGURE #
+###########################
+
+# choose which content types you want to download
+DOWNLOAD_POSTS = True
+DOWNLOAD_ARCHIVED_POSTS = True
+DOWNLOAD_STORIES = True
+DOWNLOAD_HIGHLIGHTS = True
+DOWNLOAD_MESSAGES = True
+DOWNLOAD_PURCHASED = True
+
+# use sub-folders depending on content type, or download everything to /profile/photos and /profile/videos
+USE_SUB_FOLDERS = True
+
+# User-Agent can be retrieved from https://www.whatismybrowser.com/detect/what-is-my-user-agent
+API_HEADER = {
+    "Accept": "application/json, text/plain, */*",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36",
+    "Accept-Encoding": "gzip, deflate"
+}
+
+########################
+# END OF CONFIGURATION #
+########################
 
 # api info
 URL = "https://onlyfans.com"
@@ -41,19 +58,14 @@ PROFILE = ""
 PROFILE_INFO = {}
 PROFILE_ID = ""
 
-API_HEADER = {
-    "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36",
-    "Accept-Encoding": "gzip, deflate"
-}
-
-# choose which content types you want to download
-DOWNLOAD_POSTS = True
-DOWNLOAD_ARCHIVED_POSTS = True
-DOWNLOAD_STORIES = True
-DOWNLOAD_HIGHLIGHTS = True
-DOWNLOAD_MESSAGES = True
-DOWNLOAD_PURCHASED = True
+# maximum number of posts to index
+# DONT CHANGE THAT
+POST_LIMIT = "100"
+ARCHIVED_POST_LIMIT = "100"
+STORY_LIMIT = "100"
+HIGHLIGHT_LIMIT = "100"
+MESSAGE_LIMIT = "10"
+PURCHASE_LIMIT = "100"
 
 # API request convenience function
 # getdata and postdata should both be JSON
@@ -112,26 +124,27 @@ def build_folder_structure():
         os.mkdir(profile_path)
         os.mkdir(profile_path + "/photos")
         os.mkdir(profile_path + "/videos")
-    if not os.path.isdir(profile_path + "/archived"):
-        os.mkdir(profile_path + "/archived")
-        os.mkdir(profile_path + "/archived" + "/photos")
-        os.mkdir(profile_path + "/archived" + "/videos")
-    if not os.path.isdir(profile_path + "/stories"):
-        os.mkdir(profile_path + "/stories")
-        os.mkdir(profile_path + "/stories" + "/photos")
-        os.mkdir(profile_path + "/stories" + "/videos")
-    if not os.path.isdir(profile_path + "/highlights"):
-        os.mkdir(profile_path + "/highlights")
-        os.mkdir(profile_path + "/highlights" + "/photos")
-        os.mkdir(profile_path + "/highlights" + "/videos")
-    if not os.path.isdir(profile_path + "/messages"):
-        os.mkdir(profile_path + "/messages")
-        os.mkdir(profile_path + "/messages" + "/photos")
-        os.mkdir(profile_path + "/messages" + "/videos")
-    if not os.path.isdir(profile_path + "/purchased"):
-        os.mkdir(profile_path + "/purchased")
-        os.mkdir(profile_path + "/purchased" + "/photos")
-        os.mkdir(profile_path + "/purchased" + "/videos")
+    if USE_SUB_FOLDERS
+        if not os.path.isdir(profile_path + "/archived") and DOWNLOAD_ARCHIVED_POSTS:
+            os.mkdir(profile_path + "/archived")
+            os.mkdir(profile_path + "/archived" + "/photos")
+            os.mkdir(profile_path + "/archived" + "/videos")
+        if not os.path.isdir(profile_path + "/stories") and DOWNLOAD_STORIES:
+            os.mkdir(profile_path + "/stories")
+            os.mkdir(profile_path + "/stories" + "/photos")
+            os.mkdir(profile_path + "/stories" + "/videos")
+        if not os.path.isdir(profile_path + "/highlights") and DOWNLOAD_HIGHLIGHTS:
+            os.mkdir(profile_path + "/highlights")
+            os.mkdir(profile_path + "/highlights" + "/photos")
+            os.mkdir(profile_path + "/highlights" + "/videos")
+        if not os.path.isdir(profile_path + "/messages") and DOWNLOAD_MESSAGES:
+            os.mkdir(profile_path + "/messages")
+            os.mkdir(profile_path + "/messages" + "/photos")
+            os.mkdir(profile_path + "/messages" + "/videos")
+        if not os.path.isdir(profile_path + "/purchased") and DOWNLOAD_PURCHASED:
+            os.mkdir(profile_path + "/purchased")
+            os.mkdir(profile_path + "/purchased" + "/photos")
+            os.mkdir(profile_path + "/purchased" + "/videos")
 
 
 # /users/<profile>
@@ -161,7 +174,7 @@ def download_media(media, *args):
     ext = ext[0][:-1]
 
     path = "/" + media["type"] + "s/" + id + ext
-    if (len(args) > 0):
+    if len(args) > 0 and USE_SUB_FOLDERS:
         path = "/" + args[0] + path
     if not os.path.isfile("profiles/" + PROFILE + path):
         print(path)
@@ -376,4 +389,4 @@ if __name__ == "__main__":
         "\nStories: {}".format(story_files) +
         "\nHighlights: {}".format(highlight_files) +
         "\nMessages: {}".format(message_files) +
-        "\nPurchased: {}".format(purchased_files) + "\n")
+        "\nPurchased: {}".format(purchased_files))
