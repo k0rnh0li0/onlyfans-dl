@@ -18,6 +18,11 @@ import requests
 # maximum number of posts to index
 # DONT CHANGE THAT
 POST_LIMIT = "100"
+ARCHIVED_POST_LIMIT = "100"
+STORY_LIMIT = "100"
+HIGHLIGHT_LIMIT = "100"
+MESSAGE_LIMIT = "10"
+PURCHASE_LIMIT = "100"
 
 # api info
 URL = "https://onlyfans.com"
@@ -38,9 +43,17 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36",
     "Accept-Encoding": "gzip, deflate"
 }
+
+# choose which content types you want to download
+DOWNLOAD_POSTS = False
+DOWNLOAD_ARCHIVED_POSTS = True
+DOWNLOAD_STORIES = True
+DOWNLOAD_HIGHLIGHTS = True
+DOWNLOAD_MESSAGES = False
+DOWNLOAD_PURCHASED = False
 
 # API request convenience function
 # getdata and postdata should both be JSON
@@ -49,6 +62,7 @@ def api_request(endpoint, getdata = None, postdata = None):
         "app-token": APP_TOKEN
     }
     if getdata is not None:
+        posts_limit = int(getdata["limit"])
         for i in getdata:
             getparams[i] = getdata[i]
 
@@ -61,11 +75,11 @@ def api_request(endpoint, getdata = None, postdata = None):
                         params=getparams).json()
             posts_num = len(list_base)
 
-            if posts_num >= 100:
-                beforePublishTime = list_base[99]['postedAtPrecise']
+            if posts_num >= posts_limit:
+                beforePublishTime = list_base[posts_limit - 1]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
-                while posts_num == 100:
+                while posts_num == posts_limit:
                     # Extract posts
                     list_extend = requests.get(URL + API_URL + endpoint,
                                     headers=API_HEADER,
@@ -78,7 +92,7 @@ def api_request(endpoint, getdata = None, postdata = None):
                     # Merge with previous posts
                     list_base.extend(list_extend)
 
-                    if posts_num < 100:
+                    if posts_num < posts_limit:
                         break
             return list_base
         else:
@@ -90,6 +104,35 @@ def api_request(endpoint, getdata = None, postdata = None):
                              headers=API_HEADER,
                              params=getparams,
                              data=postdata)
+
+# make sure all folders are already present
+def build_folder_structure():
+    profile_path = "profiles/" + PROFILE
+    if not os.path.isdir(profile_path):
+        os.mkdir(profile_path)
+        os.mkdir(profile_path + "/photos")
+        os.mkdir(profile_path + "/videos")
+    if not os.path.isdir(profile_path + "/archived"):
+        os.mkdir(profile_path + "/archived")
+        os.mkdir(profile_path + "/archived" + "/photos")
+        os.mkdir(profile_path + "/archived" + "/videos")
+    if not os.path.isdir(profile_path + "/stories"):
+        os.mkdir(profile_path + "/stories")
+        os.mkdir(profile_path + "/stories" + "/photos")
+        os.mkdir(profile_path + "/stories" + "/videos")
+    if not os.path.isdir(profile_path + "/highlights"):
+        os.mkdir(profile_path + "/highlights")
+        os.mkdir(profile_path + "/highlights" + "/photos")
+        os.mkdir(profile_path + "/highlights" + "/videos")
+    if not os.path.isdir(profile_path + "/messages"):
+        os.mkdir(profile_path + "/messages")
+        os.mkdir(profile_path + "/messages" + "/photos")
+        os.mkdir(profile_path + "/messages" + "/videos")
+    if not os.path.isdir(profile_path + "/purchased"):
+        os.mkdir(profile_path + "/purchased")
+        os.mkdir(profile_path + "/purchased" + "/photos")
+        os.mkdir(profile_path + "/purchased" + "/videos")
+
 
 # /users/<profile>
 # get information about <profile>
@@ -104,11 +147,11 @@ def get_user_info(profile):
 
 # download a media item and save it to the relevant directory
 new_files=0
-def download_media(media):
+def download_media(media, *args):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if media["type"] != "photo" and media["type"] != "video":
+    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
         return
 
     # find extension
@@ -118,6 +161,8 @@ def download_media(media):
     ext = ext[0][:-1]
 
     path = "/" + media["type"] + "s/" + id + ext
+    if (len(args) > 0):
+        path = "/" + args[0] + path
     if not os.path.isfile("profiles/" + PROFILE + path):
         print(path)
         global new_files
@@ -133,14 +178,6 @@ if __name__ == "__main__":
         print("See README for instructions.")
         exit()
 
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print("~ I AM THE GREAT KORNHOLIO ~")
-    print("~  ARE U THREATENING ME??  ~")
-    print("~                          ~")
-    print("~    COOMERS GUNNA COOM    ~")
-    print("~    HACKERS GUNNA HACK    ~")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-
     # check the access token, pull user info
     API_HEADER["access-token"] = sys.argv[2]
     print("Getting user auth info... ")
@@ -153,7 +190,7 @@ if __name__ == "__main__":
     PROFILE_INFO = get_user_info(PROFILE)
     PROFILE_ID = str(PROFILE_INFO["id"])
 
-    print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
+    print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!")
 
     if not os.path.isdir("profiles"):
         os.mkdir("profiles")
@@ -162,9 +199,7 @@ if __name__ == "__main__":
         print("\nProfiles/" + PROFILE + " exists.")
         print("Media already present will not be re-downloaded.")
     else:
-        os.mkdir("profiles/" + PROFILE)
-        os.mkdir("profiles/" + PROFILE + "/photos")
-        os.mkdir("profiles/" + PROFILE + "/videos")
+        build_folder_structure()
 
     # first save profile info
     print("Saving profile info...")
@@ -184,21 +219,157 @@ if __name__ == "__main__":
     with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
         json.dump(sinf, infojson)
 
+    # check folders in-case anything changed    
+    build_folder_structure()
+
+    # TODO: Simplify structure. Most of these code blocks are repeated,
+    #       with small changes between each function. There should be a way
+    #       to create a shell function where we can pass in the parameters
+    #       that change for each content type.
+
     # get all user posts
-    print("Finding posts...")
-    posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
-    if len(posts) == 0:
-        print("ERROR: 0 posts found.")
-        exit()
+    if DOWNLOAD_POSTS:
+        print("\nFinding posts...")
+        posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
+        if len(posts) == 0:
+            print("No posts found.")
+        else:
+            print("Found " + str(len(posts)) + " posts. Downloading media...")
+            # iterate over posts, downloading all media
+            for post in posts:
+                if not post["canViewMedia"]:
+                    continue
 
-    print("Found " + str(len(posts)) + " posts. Downloading media...")
+                for media in post["media"]:
+                    if 'source' in media:
+                        download_media(media)
+            print("Downloaded " + str(new_files) + " new files.")
 
-    # iterate over posts, downloading all media
-    for post in posts:
-        if not post["canViewMedia"]:
-            continue
+    # reset file counter
+    post_files = new_files
+    new_files = 0
 
-        for media in post["media"]:
-            if 'source' in media:
-            	download_media(media)
-    print("Downloaded " + str(new_files) + " new files.")
+    # get all user archived posts
+    if DOWNLOAD_ARCHIVED_POSTS:
+        print("\nFinding archived posts...")
+        posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": ARCHIVED_POST_LIMIT})
+        if len(posts) == 0:
+            print("No archived posts found.")
+        else:
+            print("Found " + str(len(posts)) + " archived posts. Downloading media...")
+            # iterate over posts, downloading all media
+            for post in posts:
+                if not post["canViewMedia"]:
+                    continue
+
+                for media in post["media"]:
+                    if 'source' in media:
+                        download_media(media, "archived")
+            print("Downloaded " + str(new_files) + " new files.")
+
+    # reset file counter
+    archived_post_files = new_files
+    new_files = 0
+
+    # get all user stories
+    if DOWNLOAD_STORIES:
+        print("\nFinding stories...")
+        posts = api_request("/users/" + PROFILE_ID + "/stories", getdata={"limit": STORY_LIMIT})
+        if len(posts) == 0:
+            print("No stories found.")
+        else:
+            print("Found " + str(len(posts)) + " stories. Downloading media...")
+            # iterate over stories, downloading all media
+            for post in posts:
+                for media in post["media"]:
+                    if 'source' in media:
+                        download_media(media, "stories")
+            print("Downloaded " + str(new_files) + " new files.")
+
+    # reset file counter
+    story_files = new_files
+    new_files = 0
+
+    # get all user highlights
+    if DOWNLOAD_HIGHLIGHTS:
+        # if you're curious, highlights are really dumb. you first need to hit one URL to findout if the user has any highlights,
+        # then from there you need to get the IDs of each highlight, and ping a different URL location with those IDs to actually
+        # download the content. 
+        print("\nFinding highlights...")
+        stories = api_request("/users/" + PROFILE_ID + "/stories/highlights", getdata={"limit": HIGHLIGHT_LIMIT})
+        if len(stories) == 0:
+            print("No highlights found.")
+        else:
+            print("Found " + str(len(stories)) + " highlights. Downloading media...")
+            for story in stories:
+                posts = api_request("/stories/highlights/{}".format(story["id"]), getdata={"limit": HIGHLIGHT_LIMIT})
+                posts = posts["stories"]
+                # iterate over highlights, downloading all media
+                for post in posts:
+                    for media in post["media"]:
+                        if 'source' in media:
+                            download_media(media, "highlights")
+                print("Downloaded " + str(new_files) + " new files.")
+
+    # reset file counter
+    highlight_files = new_files
+    new_files = 0
+
+    # TODO: Purchased posts will often contain posts purhcased from messages.
+    #       A more complex system should be implemented to avoid downloading
+    #       purchased messages to avoid having these posts show up in the
+    #       messages folder as well as the purchased folder.
+    #
+    #       Looking through the response from messages, I can't see any easy
+    #       way to determine whether or not a message was originally paywalled
+    #       and then purchased, as purchased posts just show up as "free" with
+    #       thier ability to be purchased set to false.
+
+    # get all user messages
+    if DOWNLOAD_MESSAGES:
+        print("\nFinding messages...")
+        posts = api_request("/chats/" + PROFILE_ID + "/messages", getdata={"limit": MESSAGE_LIMIT})
+        posts = posts["list"]
+        if len(posts) == 0:
+            print("No messages found.")
+        else:
+            print("Found " + str(len(posts)) + " messages. Downloading media...")
+            # iterate over messages, downloading all media
+            for post in posts:
+                for media in post["media"]:
+                    if 'source' in media:
+                        download_media(media, "messages")
+            print("Downloaded " + str(new_files) + " new files.")
+
+    # reset file counter
+    message_files = new_files
+    new_files = 0
+
+    # get all user purchases
+    if DOWNLOAD_PURCHASED:
+        print("\nFinding purchased posts...")
+        posts = api_request("/posts/paid", getdata={"limit": PURCHASE_LIMIT})
+        if len(posts) == 0:
+            print("No purchased posts found.")
+        else:
+            print("Found " + str(len(posts)) + " purchased posts. Downloading media...")
+            # iterate over purchased posts, downloading all media
+            for post in posts:
+                user = post["fromUser"]
+                username = user["username"]
+                if username != PROFILE:
+                    continue
+                for media in post["media"]:
+                    if 'source' in media:
+                        download_media(media, "purchased")
+            print("Downloaded " + str(new_files) + " new files.")
+
+    purchased_files = new_files
+
+    print("\nTotal files downloaded:" +
+        "\nPosts: {}".format(post_files) +
+        "\nArchived Posts: {}".format(archived_post_files) +
+        "\nStories: {}".format(story_files) +
+        "\nHighlights: {}".format(highlight_files) +
+        "\nMessages: {}".format(message_files) +
+        "\nPurchased: {}".format(purchased_files))
