@@ -124,7 +124,7 @@ def build_folder_structure():
         os.mkdir(profile_path)
         os.mkdir(profile_path + "/photos")
         os.mkdir(profile_path + "/videos")
-    if USE_SUB_FOLDERS
+    if USE_SUB_FOLDERS:
         if not os.path.isdir(profile_path + "/archived") and DOWNLOAD_ARCHIVED_POSTS:
             os.mkdir(profile_path + "/archived")
             os.mkdir(profile_path + "/archived" + "/photos")
