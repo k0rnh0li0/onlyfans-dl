@@ -277,6 +277,8 @@ if __name__ == "__main__":
         posts = api_request("/users/" + PROFILE_ID + "/stories", getdata={"limit": STORY_LIMIT})
         if len(posts) == 0:
             print("No stories found.")
+        elif len(posts) == 1 and "error" in posts:
+            print("You do not have access to this user's stories.")
         else:
             print("Found " + str(len(posts)) + " stories. Downloading media...")
             # iterate over stories, downloading all media
@@ -299,6 +301,8 @@ if __name__ == "__main__":
         stories = api_request("/users/" + PROFILE_ID + "/stories/highlights", getdata={"limit": HIGHLIGHT_LIMIT})
         if len(stories) == 0:
             print("No highlights found.")
+        elif len(stories) == 1 and "error" in stories:
+            print("You do not have access to this user's highlights.")
         else:
             print("Found " + str(len(stories)) + " highlights. Downloading media...")
             for story in stories:
@@ -372,4 +376,4 @@ if __name__ == "__main__":
         "\nStories: {}".format(story_files) +
         "\nHighlights: {}".format(highlight_files) +
         "\nMessages: {}".format(message_files) +
-        "\nPurchased: {}".format(purchased_files))
+        "\nPurchased: {}".format(purchased_files) + "\n")
