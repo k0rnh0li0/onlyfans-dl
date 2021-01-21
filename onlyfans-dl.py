@@ -48,12 +48,12 @@ API_HEADER = {
 }
 
 # choose which content types you want to download
-DOWNLOAD_POSTS = False
+DOWNLOAD_POSTS = True
 DOWNLOAD_ARCHIVED_POSTS = True
 DOWNLOAD_STORIES = True
 DOWNLOAD_HIGHLIGHTS = True
-DOWNLOAD_MESSAGES = False
-DOWNLOAD_PURCHASED = False
+DOWNLOAD_MESSAGES = True
+DOWNLOAD_PURCHASED = True
 
 # API request convenience function
 # getdata and postdata should both be JSON
