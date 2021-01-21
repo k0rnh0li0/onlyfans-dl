@@ -108,7 +108,7 @@ def download_media(media):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if media["type"] != "photo" and media["type"] != "video":
+    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
         return
 
     # find extension
