@@ -14,6 +14,8 @@ import sys
 import json
 import shutil
 import requests
+import time
+import datetime as dt
 
 # maximum number of posts to index
 # DONT CHANGE THAT
@@ -127,6 +129,15 @@ def download_media(media):
             r.raw.decode_content = True
             shutil.copyfileobj(r.raw, f)
 
+def calc_process_time(starttime, arraykey, arraylength):
+    timeelapsed = time.time() - starttime
+    timeest = (timeelapsed/arraykey)*(arraylength)
+    finishtime = starttime + timeest
+    finishtime = dt.datetime.fromtimestamp(finishtime).strftime("%H:%M:%S")  # in time
+    lefttime = dt.timedelta(seconds=(int(timeest-timeelapsed)))  # get a nicer looking timestamp this way
+    timeelapseddelta = dt.timedelta(seconds=(int(timeelapsed))) # same here
+    return (timeelapseddelta, lefttime, finishtime)
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: ./onlyfans-dl <profile> <accessToken>")
@@ -187,18 +198,29 @@ if __name__ == "__main__":
     # get all user posts
     print("Finding posts...")
     posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
-    if len(posts) == 0:
+    postcount = len(posts)
+    if postcount == 0:
         print("ERROR: 0 posts found.")
         exit()
 
-    print("Found " + str(len(posts)) + " posts. Downloading media...")
+    print("Found " + str(postcount) + " posts. Downloading media...")
+    
+    # get start time for estimation purposes
+    starttime = time.time()
 
     # iterate over posts, downloading all media
-    for post in posts:
+    for k, post in enumerate(posts, start=1):
         if not post["canViewMedia"]:
             continue
 
         for media in post["media"]:
             if 'source' in media:
             	download_media(media)
+
+        #adding some nice info in here for download stats
+        print("Post " + str(k) + "/" + str(postcount) + " has been downloaded.")
+        print("Downloading is " + str(round(((k / postcount) * 100))) + "% completed.")
+        timestats = calc_process_time(starttime,k,postcount)
+        print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s"%timestats)
+
     print("Downloaded " + str(new_files) + " new files.")
