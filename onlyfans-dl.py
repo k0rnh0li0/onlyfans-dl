@@ -40,7 +40,7 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
     "Accept-Encoding": "gzip, deflate"
 }
 
@@ -106,7 +106,7 @@ def get_user_info(profile):
 
 # download a media item and save it to the relevant directory
 new_files=0
-def download_media(media):
+def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
@@ -119,7 +119,10 @@ def download_media(media):
         return
     ext = ext[0][:-1]
 
-    path = "/" + media["type"] + "s/" + id + ext
+    if is_archived:
+        path = "/archived/" + media["type"] + "s/" + id + ext
+    else:
+        path = "/" + media["type"] + "s/" + id + ext
     if not os.path.isfile("profiles/" + PROFILE + path):
         print(path)
         global new_files
@@ -137,6 +140,23 @@ def calc_process_time(starttime, arraykey, arraylength):
     lefttime = dt.timedelta(seconds=(int(timeest-timeelapsed)))  # get a nicer looking timestamp this way
     timeelapseddelta = dt.timedelta(seconds=(int(timeelapsed))) # same here
     return (timeelapseddelta, lefttime, finishtime)
+
+# iterate over posts, downloading all media
+def download_posts(posts, is_archived):
+    for k, post in enumerate(posts, start=1):
+        if not post["canViewMedia"]:
+            continue
+
+        for media in post["media"]:
+            if 'source' in media:
+                download_media(media, is_archived)
+
+        # adding some nice info in here for download stats
+        print("Post " + str(k) + "/" + str(postcount) + " has been downloaded.")
+        print("Downloading is " + str(round(((k / postcount) * 100))) + "% completed.")
+        timestats = calc_process_time(starttime, k, postcount)
+        print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -177,6 +197,11 @@ if __name__ == "__main__":
         os.mkdir("profiles/" + PROFILE + "/photos")
         os.mkdir("profiles/" + PROFILE + "/videos")
 
+    if not os.path.isdir("profiles/" + PROFILE + "/archived"):
+        os.mkdir("profiles/" + PROFILE + "/archived")
+        os.mkdir("profiles/" + PROFILE + "/archived/photos")
+        os.mkdir("profiles/" + PROFILE + "/archived/videos")
+
     # first save profile info
     print("Saving profile info...")
 
@@ -198,29 +223,19 @@ if __name__ == "__main__":
     # get all user posts
     print("Finding posts...")
     posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
+    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
     postcount = len(posts)
-    if postcount == 0:
+    archived_postcount = len(posts)
+    if postcount + archived_postcount == 0:
         print("ERROR: 0 posts found.")
         exit()
 
-    print("Found " + str(postcount) + " posts. Downloading media...")
+    print("Found " + str(postcount + archived_postcount) + " posts. Downloading media...")
     
     # get start time for estimation purposes
     starttime = time.time()
 
-    # iterate over posts, downloading all media
-    for k, post in enumerate(posts, start=1):
-        if not post["canViewMedia"]:
-            continue
-
-        for media in post["media"]:
-            if 'source' in media:
-            	download_media(media)
-
-        #adding some nice info in here for download stats
-        print("Post " + str(k) + "/" + str(postcount) + " has been downloaded.")
-        print("Downloading is " + str(round(((k / postcount) * 100))) + "% completed.")
-        timestats = calc_process_time(starttime,k,postcount)
-        print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s"%timestats)
+    download_posts(posts, False)
+    download_posts(archived_posts, True)
 
     print("Downloaded " + str(new_files) + " new files.")
