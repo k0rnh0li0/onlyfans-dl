@@ -221,13 +221,15 @@ if __name__ == "__main__":
         json.dump(sinf, infojson)
 
     # get all user posts
-    print("Finding posts...")
     print("Finding photos...")
     photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
+    print("Found " + str(len(photo_posts)) + " photos.")
     print("Finding videos...")
     video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
+    print("Found " + str(len(video_posts)) + " videos.")
     print("Finding archived content...")
     archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
+    print("Found " + str(len(archived_posts)) + " archived posts.")
     postcount = len(photo_posts) + len(video_posts)
     archived_postcount = len(archived_posts)
     if postcount + archived_postcount == 0:
