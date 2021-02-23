@@ -40,7 +40,7 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36",
     "Accept-Encoding": "gzip, deflate"
 }
 
@@ -222,20 +222,25 @@ if __name__ == "__main__":
 
     # get all user posts
     print("Finding posts...")
-    posts = api_request("/users/" + PROFILE_ID + "/posts", getdata={"limit": POST_LIMIT})
+    print("Finding photos...")
+    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
+    print("Finding videos...")
+    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
+    print("Finding archived content...")
     archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
-    postcount = len(posts)
-    archived_postcount = len(posts)
+    postcount = len(photo_posts) + len(video_posts)
+    archived_postcount = len(archived_posts)
     if postcount + archived_postcount == 0:
         print("ERROR: 0 posts found.")
         exit()
 
     print("Found " + str(postcount + archived_postcount) + " posts. Downloading media...")
-    
+
     # get start time for estimation purposes
     starttime = time.time()
 
-    download_posts(posts, False)
+    download_posts(photo_posts, False)
+    download_posts(video_posts, False)
     download_posts(archived_posts, True)
 
     print("Downloaded " + str(new_files) + " new files.")
