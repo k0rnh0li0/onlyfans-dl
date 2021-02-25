@@ -127,10 +127,14 @@ def download_media(media, is_archived):
         print(path)
         global new_files
         new_files += 1
-        r = requests.get(source, stream=True)
-        with open("profiles/" + PROFILE + path, 'wb') as f:
-            r.raw.decode_content = True
-            shutil.copyfileobj(r.raw, f)
+        download_file(source, path)
+
+# helper to generally download files
+def download_file(source, path):
+    r = requests.get(source, stream=True)
+    with open("profiles/" + PROFILE + path, 'wb') as f:
+        r.raw.decode_content = True
+        shutil.copyfileobj(r.raw, f)
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
