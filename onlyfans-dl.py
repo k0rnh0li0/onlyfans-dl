@@ -109,8 +109,22 @@ def get_user_info(profile):
         exit()
     return info
 
-# download a media item and save it to the relevant directory
+# download public files like avatar and header
 new_files=0
+def download_public_files():
+    public_files = ["avatar", "header"]
+    for public_file in public_files:
+        source = PROFILE_INFO[public_file]
+        id = get_id_from_path(source)
+        file_type = source[source.rfind("."):]
+        path = "/" + public_file + "/" + id + file_type
+        if not os.path.isfile("profiles/" + PROFILE + path):
+            print("Downloading " + public_file + "...")
+            download_file(PROFILE_INFO[public_file], path)
+            global new_files
+            new_files += 1
+
+# download a media item and save it to the relevant directory
 def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
@@ -208,7 +222,7 @@ if __name__ == "__main__":
     assure_dir("profiles")
     assure_dir("profiles/" + PROFILE)
     assure_dir("profiles/" + PROFILE + "/avatar")
-    assure_dir("profiles/" + PROFILE + "/banner")
+    assure_dir("profiles/" + PROFILE + "/header")
     assure_dir("profiles/" + PROFILE + "/photos")
     assure_dir("profiles/" + PROFILE + "/videos")
     assure_dir("profiles/" + PROFILE + "/archived")
@@ -232,6 +246,8 @@ if __name__ == "__main__":
 
     with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
         json.dump(sinf, infojson)
+
+    download_public_files()
 
     # get all user posts
     print("Finding photos...")
