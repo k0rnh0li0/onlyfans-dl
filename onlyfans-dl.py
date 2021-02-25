@@ -141,6 +141,12 @@ def download_file(source, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
+def get_id_from_path(path):
+    last_index = path.rfind("/")
+    second_last_index = path.rfind("/", 0, last_index - 1)
+    id = path[second_last_index+1:last_index]
+    return id
+
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
     timeest = (timeelapsed/arraykey)*(arraylength)
