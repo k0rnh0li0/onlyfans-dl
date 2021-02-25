@@ -44,6 +44,11 @@ API_HEADER = {
     "Accept-Encoding": "gzip, deflate"
 }
 
+# helper function to make sure a dir is present
+def assure_dir(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
 # API request convenience function
 # getdata and postdata should both be JSON
 def api_request(endpoint, getdata = None, postdata = None):
@@ -190,21 +195,19 @@ if __name__ == "__main__":
 
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
-    if not os.path.isdir("profiles"):
-        os.mkdir("profiles")
-
     if os.path.isdir("profiles/" + PROFILE):
         print("\nProfiles/" + PROFILE + " exists.")
         print("Media already present will not be re-downloaded.")
-    else:
-        os.mkdir("profiles/" + PROFILE)
-        os.mkdir("profiles/" + PROFILE + "/photos")
-        os.mkdir("profiles/" + PROFILE + "/videos")
 
-    if not os.path.isdir("profiles/" + PROFILE + "/archived"):
-        os.mkdir("profiles/" + PROFILE + "/archived")
-        os.mkdir("profiles/" + PROFILE + "/archived/photos")
-        os.mkdir("profiles/" + PROFILE + "/archived/videos")
+    assure_dir("profiles")
+    assure_dir("profiles/" + PROFILE)
+    assure_dir("profiles/" + PROFILE + "/avatar")
+    assure_dir("profiles/" + PROFILE + "/banner")
+    assure_dir("profiles/" + PROFILE + "/photos")
+    assure_dir("profiles/" + PROFILE + "/videos")
+    assure_dir("profiles/" + PROFILE + "/archived")
+    assure_dir("profiles/" + PROFILE + "/archived/photos")
+    assure_dir("profiles/" + PROFILE + "/archived/videos")
 
     # first save profile info
     print("Saving profile info...")
