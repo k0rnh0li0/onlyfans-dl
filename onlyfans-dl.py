@@ -183,9 +183,9 @@ def download_posts(cur_count, posts, is_archived):
 
         # adding some nice info in here for download stats
         print("Post " + str(cur_count) + "/" + str(postcount) + " has been downloaded.")
+        print("Downloading is " + str(round(((cur_count / postcount) * 100))) + "% completed.")
         cur_count = cur_count + 1
 
-        print("Downloading is " + str(round(((cur_count / postcount) * 100))) + "% completed.")
         timestats = calc_process_time(starttime, k, postcount)
         print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats)
 
