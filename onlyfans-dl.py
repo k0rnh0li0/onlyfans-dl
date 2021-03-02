@@ -40,9 +40,14 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
     "Accept-Encoding": "gzip, deflate"
 }
+
+# helper function to make sure a dir is present
+def assure_dir(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)
 
 # API request convenience function
 # getdata and postdata should both be JSON
@@ -104,8 +109,22 @@ def get_user_info(profile):
         exit()
     return info
 
-# download a media item and save it to the relevant directory
+# download public files like avatar and header
 new_files=0
+def download_public_files():
+    public_files = ["avatar", "header"]
+    for public_file in public_files:
+        source = PROFILE_INFO[public_file]
+        id = get_id_from_path(source)
+        file_type = source[source.rfind("."):]
+        path = "/" + public_file + "/" + id + file_type
+        if not os.path.isfile("profiles/" + PROFILE + path):
+            print("Downloading " + public_file + "...")
+            download_file(PROFILE_INFO[public_file], path)
+            global new_files
+            new_files += 1
+
+# download a media item and save it to the relevant directory
 def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
@@ -127,10 +146,20 @@ def download_media(media, is_archived):
         print(path)
         global new_files
         new_files += 1
-        r = requests.get(source, stream=True)
-        with open("profiles/" + PROFILE + path, 'wb') as f:
-            r.raw.decode_content = True
-            shutil.copyfileobj(r.raw, f)
+        download_file(source, path)
+
+# helper to generally download files
+def download_file(source, path):
+    r = requests.get(source, stream=True)
+    with open("profiles/" + PROFILE + path, 'wb') as f:
+        r.raw.decode_content = True
+        shutil.copyfileobj(r.raw, f)
+
+def get_id_from_path(path):
+    last_index = path.rfind("/")
+    second_last_index = path.rfind("/", 0, last_index - 1)
+    id = path[second_last_index+1:last_index]
+    return id
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
@@ -186,21 +215,19 @@ if __name__ == "__main__":
 
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
-    if not os.path.isdir("profiles"):
-        os.mkdir("profiles")
-
     if os.path.isdir("profiles/" + PROFILE):
         print("\nProfiles/" + PROFILE + " exists.")
         print("Media already present will not be re-downloaded.")
-    else:
-        os.mkdir("profiles/" + PROFILE)
-        os.mkdir("profiles/" + PROFILE + "/photos")
-        os.mkdir("profiles/" + PROFILE + "/videos")
 
-    if not os.path.isdir("profiles/" + PROFILE + "/archived"):
-        os.mkdir("profiles/" + PROFILE + "/archived")
-        os.mkdir("profiles/" + PROFILE + "/archived/photos")
-        os.mkdir("profiles/" + PROFILE + "/archived/videos")
+    assure_dir("profiles")
+    assure_dir("profiles/" + PROFILE)
+    assure_dir("profiles/" + PROFILE + "/avatar")
+    assure_dir("profiles/" + PROFILE + "/header")
+    assure_dir("profiles/" + PROFILE + "/photos")
+    assure_dir("profiles/" + PROFILE + "/videos")
+    assure_dir("profiles/" + PROFILE + "/archived")
+    assure_dir("profiles/" + PROFILE + "/archived/photos")
+    assure_dir("profiles/" + PROFILE + "/archived/videos")
 
     # first save profile info
     print("Saving profile info...")
@@ -219,6 +246,8 @@ if __name__ == "__main__":
 
     with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
         json.dump(sinf, infojson)
+
+    download_public_files()
 
     # get all user posts
     print("Finding photos...")
