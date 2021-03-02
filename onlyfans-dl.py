@@ -40,7 +40,7 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0",
     "Accept-Encoding": "gzip, deflate"
 }
 
@@ -171,7 +171,8 @@ def calc_process_time(starttime, arraykey, arraylength):
     return (timeelapseddelta, lefttime, finishtime)
 
 # iterate over posts, downloading all media
-def download_posts(posts, is_archived):
+# returns the new count of downloaded posts
+def download_posts(cur_count, posts, is_archived):
     for k, post in enumerate(posts, start=1):
         if not post["canViewMedia"]:
             continue
@@ -181,10 +182,14 @@ def download_posts(posts, is_archived):
                 download_media(media, is_archived)
 
         # adding some nice info in here for download stats
-        print("Post " + str(k) + "/" + str(postcount) + " has been downloaded.")
-        print("Downloading is " + str(round(((k / postcount) * 100))) + "% completed.")
+        print("Post " + str(cur_count) + "/" + str(postcount) + " has been downloaded.")
+        cur_count = cur_count + 1
+
+        print("Downloading is " + str(round(((cur_count / postcount) * 100))) + "% completed.")
         timestats = calc_process_time(starttime, k, postcount)
         print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats)
+
+    return cur_count
 
 
 if __name__ == "__main__":
@@ -270,8 +275,8 @@ if __name__ == "__main__":
     # get start time for estimation purposes
     starttime = time.time()
 
-    download_posts(photo_posts, False)
-    download_posts(video_posts, False)
-    download_posts(archived_posts, True)
+    cur_count = download_posts(1, photo_posts, False)
+    cur_count = download_posts(cur_count, video_posts, False)
+    download_posts(cur_count, archived_posts, True)
 
     print("Downloaded " + str(new_files) + " new files.")
