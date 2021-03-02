@@ -9,6 +9,18 @@ Each profile you download will be stored as a subdirectory of `profiles`.
 Inside each profile directory, some information will be saved in `info.json`,
 and all media will be downloaded to `photos/` and `videos/`.
 
+DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. ( 
+[#8](https://github.com/k0rnh0li0/onlyfans-dl/issues/8)
+[#25](https://github.com/k0rnh0li0/onlyfans-dl/issues/25)
+[#28](https://github.com/k0rnh0li0/onlyfans-dl/issues/28)
+[#29](https://github.com/k0rnh0li0/onlyfans-dl/issues/29)
+[#33](https://github.com/k0rnh0li0/onlyfans-dl/issues/33)
+[#44](https://github.com/k0rnh0li0/onlyfans-dl/issues/44)
+[#45](https://github.com/k0rnh0li0/onlyfans-dl/issues/45)
+)
+
+LOOK: `python -m pip install requests`
+
 ## Usage
 `./onlyfans-dl.py <profile> <accessToken>`
 * `<profile>` - the username of the profile to download
