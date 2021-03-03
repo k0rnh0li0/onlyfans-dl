@@ -183,9 +183,9 @@ def download_posts(cur_count, posts, is_archived):
 
         # adding some nice info in here for download stats
         timestats = calc_process_time(starttime, k, total_count)
-        dwnld_stats = f"{cur_count}/{total_count} {round(((cur_count / total_count) * 100))} " + \
+        dwnld_stats = f"{cur_count}/{total_count} {round(((cur_count / total_count) * 100))}% " + \
                       "Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats
-        end = '' if cur_count == total_count else '\r'
+        end = '\n' if cur_count == total_count else '\r'
         print(dwnld_stats, end=end)
         
         cur_count = cur_count + 1
