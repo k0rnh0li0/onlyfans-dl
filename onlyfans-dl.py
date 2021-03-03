@@ -256,13 +256,13 @@ if __name__ == "__main__":
     download_public_files()
 
     # get all user posts
-    print("Finding photos...")
+    print("Finding photos...", end=' ', flush=True)
     photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(photo_posts)) + " photos.")
-    print("Finding videos...")
+    print("Finding videos...", end=' ', flush=True)
     video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(video_posts)) + " videos.")
-    print("Finding archived content...")
+    print("Finding archived content...", end=' ', flush=True)
     archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(archived_posts)) + " archived posts.")
     postcount = len(photo_posts) + len(video_posts)
