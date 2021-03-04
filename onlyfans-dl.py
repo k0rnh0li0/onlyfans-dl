@@ -143,7 +143,7 @@ def download_media(media, is_archived):
     else:
         path = "/" + media["type"] + "s/" + id + ext
     if not os.path.isfile("profiles/" + PROFILE + path):
-        print(path)
+        # print(path)
         global new_files
         new_files += 1
         download_file(source, path)
@@ -182,12 +182,13 @@ def download_posts(cur_count, posts, is_archived):
                 download_media(media, is_archived)
 
         # adding some nice info in here for download stats
-        print("Post " + str(cur_count) + "/" + str(postcount) + " has been downloaded.")
-        print("Downloading is " + str(round(((cur_count / postcount) * 100))) + "% completed.")
+        timestats = calc_process_time(starttime, k, total_count)
+        dwnld_stats = f"{cur_count}/{total_count} {round(((cur_count / total_count) * 100))}% " + \
+                      "Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats
+        end = '\n' if cur_count == total_count else '\r'
+        print(dwnld_stats, end=end)
+        
         cur_count = cur_count + 1
-
-        timestats = calc_process_time(starttime, k, postcount)
-        print("Statistics (HH:MM:SS): Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats)
 
     return cur_count
 
@@ -255,13 +256,13 @@ if __name__ == "__main__":
     download_public_files()
 
     # get all user posts
-    print("Finding photos...")
+    print("Finding photos...", end=' ', flush=True)
     photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(photo_posts)) + " photos.")
-    print("Finding videos...")
+    print("Finding videos...", end=' ', flush=True)
     video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(video_posts)) + " videos.")
-    print("Finding archived content...")
+    print("Finding archived content...", end=' ', flush=True)
     archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
     print("Found " + str(len(archived_posts)) + " archived posts.")
     postcount = len(photo_posts) + len(video_posts)
@@ -270,7 +271,9 @@ if __name__ == "__main__":
         print("ERROR: 0 posts found.")
         exit()
 
-    print("Found " + str(postcount + archived_postcount) + " posts. Downloading media...")
+    total_count = postcount + archived_postcount
+        
+    print("Found " + str(total_count) + " posts. Downloading media...")
 
     # get start time for estimation purposes
     starttime = time.time()
