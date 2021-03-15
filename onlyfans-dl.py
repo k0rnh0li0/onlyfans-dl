@@ -198,7 +198,6 @@ def download_posts(cur_count, posts, is_archived):
 
     return cur_count
 
-
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: ./onlyfans-dl <profile> <accessToken>")
