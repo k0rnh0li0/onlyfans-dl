@@ -119,7 +119,7 @@ def download_public_files():
     for public_file in public_files:
         source = PROFILE_INFO[public_file]
         id = get_id_from_path(source)
-        file_type = source[source.rfind("."):]
+        file_type = re.findall("\.\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
         if not os.path.isfile("profiles/" + PROFILE + path):
             print("Downloading " + public_file + "...")
