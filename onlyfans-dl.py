@@ -18,34 +18,24 @@ import base64
 import time
 import datetime as dt
 
-# maximum number of posts to index
-# DONT CHANGE THAT
-POST_LIMIT = "100"
-
-# api info
-URL = "https://onlyfans.com"
-API_URL = "/api2/v2"
-
-#\TODO dynamically get app token
-# Note: this is not an auth token
-APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
-
-# user info from /users/customer
+# Initialize variables (Purely cosmetic to stop linters from throwing errors)
+POST_LIMIT = ""
+URL = ""
+API_URL = ""
+APP_TOKEN = ""
 USER_INFO = {}
-
 DEBUG = ""
-
-# target profile
 PROFILE = ""
-# profile data from /users/<profile>
 PROFILE_INFO = {}
 PROFILE_ID = ""
+API_HEADER = {}
+ACCESS_TOKEN = ""
 
-API_HEADER = {
-    "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0",
-    "Accept-Encoding": "gzip, deflate"
-}
+# move dynamic data out of the __main__
+# config.json template added to git and gitignored.
+def parsed_config(filename):
+    with open(f"{filename}",'r') as f:
+        return json.load(f)
 
 # helper function to make sure a dir is present
 def assure_dir(path):
@@ -199,8 +189,18 @@ def download_posts(cur_count, posts, is_archived):
     return cur_count
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./onlyfans-dl <profile> <accessToken>")
+
+    # Parses json to variables
+    # Ignore linters that claim variables are undefined
+    config = parsed_config("config.json")
+    for i in config.keys():
+        globals()[i] = config[i]
+    
+    #print(f"{POST_LIMIT}\n{URL}\n{API_URL}\n{APP_TOKEN}\n{USER_INFO}\n{DEBUG}\n{PROFILE}\n{PROFILE_INFO}\n{PROFILE_ID}\n{API_HEADER}\n{ACCESS_TOKEN}")
+    if ACCESS_TOKEN == "put-token-here" or not ACCESS_TOKEN:
+        
+        print("Make sure you configure config.json")
+        print("Usage: ./onlyfans-dl <profile>")
         print("See README for instructions.")
         exit()
 
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # check the access token, pull user info
-    API_HEADER["access-token"] = sys.argv[2]
+    API_HEADER["access-token"] = ACCESS_TOKEN
     print("Getting user auth info... ")
 
     USER_INFO = get_user_info("customer")
