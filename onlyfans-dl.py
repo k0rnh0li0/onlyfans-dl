@@ -197,7 +197,7 @@ if __name__ == "__main__":
         globals()[i] = config[i]
     
     #print(f"{POST_LIMIT}\n{URL}\n{API_URL}\n{APP_TOKEN}\n{USER_INFO}\n{DEBUG}\n{PROFILE}\n{PROFILE_INFO}\n{PROFILE_ID}\n{API_HEADER}\n{ACCESS_TOKEN}")
-    if ACCESS_TOKEN == "put-token-here" or not ACCESS_TOKEN:
+    if ACCESS_TOKEN == "put-token-here" or not ACCESS_TOKEN or len(sys.argv) != 1:
         
         print("Make sure you configure config.json")
         print("Usage: ./onlyfans-dl <profile>")
