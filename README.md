@@ -31,12 +31,13 @@ OnlyFans does a bunch of captcha schit in the login, so I wasn't able to automat
 process. It's very easy to get your auth token though, here's how:
 
 - Open your browser.
-- After check the value of your User-Agent (you can do this [here](https://whatismybrowser.com/detect/what-is-my-user-agent)),
+- After checking the value of your User-Agent (you can do this [here](https://whatismybrowser.com/detect/what-is-my-user-agent)),
 copy it, and put it in the value of the `User-Agent` key of `API_HEADER` in `onlyfans-dl.py`.
 - Login to OnlyFans as normal.
-- Once you have logged in, open the web console. (Press F12 and click "Console")
-- Type `localStorage.getItem("accessToken");` and press Enter.
-- Copy the string between the quotes, that's your access token.
+- Once you have logged in, open the Storage Inspector (`SHIFT+F9` on FireFox). This will be under
+the "Application" tab of Chrome DevTools.
+- Click Cookies -> https://onlyfans.com
+- Copy the value of the `sess` cookie, that's your access token.
 
 Once you have your access token, don't logout or otherwise end your session until you have
 finished downloading content with onlyfans-dl.
