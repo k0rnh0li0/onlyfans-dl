@@ -213,7 +213,9 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # check the access token, pull user info
+
     API_HEADER["access-token"] = ACCESS_TOKEN
+
     print("Getting user auth info... ")
 
     USER_INFO = get_user_info("customer")
