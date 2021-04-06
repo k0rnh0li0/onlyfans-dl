@@ -43,7 +43,6 @@ Once you have your access token, don't logout or otherwise end your session unti
 finished downloading content with onlyfans-dl.
 
 ## Contributing
-Please open an issue if you have problems running this.
 
 PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if
 you would like to extend/modify the functionality of this script.
