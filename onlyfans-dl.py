@@ -118,6 +118,8 @@ def download_public_files():
     public_files = ["avatar", "header"]
     for public_file in public_files:
         source = PROFILE_INFO[public_file]
+        if source is None:
+            continue
         id = get_id_from_path(source)
         file_type = re.findall("\.\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
