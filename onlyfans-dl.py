@@ -216,7 +216,7 @@ if __name__ == "__main__":
     API_HEADER["Cookie"] = "sess=" + sys.argv[2]
     print("Getting user auth info... ")
 
-    USER_INFO = get_user_info("customer")
+    USER_INFO = get_user_info("me")
     API_HEADER["user-id"] = str(USER_INFO["id"])
 
     print("Getting target profile info...")
