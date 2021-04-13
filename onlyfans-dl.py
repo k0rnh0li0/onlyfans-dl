@@ -81,6 +81,9 @@ def api_request(endpoint, getdata = None, postdata = None):
                                     headers=API_HEADER,
                                     params=getparams).json()
                     posts_num = len(list_extend)
+                    
+                    if posts_num < 100:
+                        break
 
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
                     beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
@@ -88,8 +91,6 @@ def api_request(endpoint, getdata = None, postdata = None):
                     # Merge with previous posts
                     list_base.extend(list_extend)
 
-                    if posts_num < 100:
-                        break
             return list_base
         else:
             return requests.get(URL + API_URL + endpoint,
