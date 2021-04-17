@@ -1,48 +1,42 @@
-THE GREAT KORNHOLIO PRESENTS
-
-# OnlyFans Profile Downloader/Archiver
-This tool downloads all photos/videos from an OnlyFans profile, creating a local archive.
+# OnlyFans Profile Downloader / Archiver
+This tool downloads all photos/videos from an OnlyFans profile, creating a local archive.\
 You must be subscribed to the profile to download their content.
 
-onlyfans-dl will create a directory called `profiles` in the repo directory. 
-Each profile you download will be stored as a subdirectory of `profiles`.
-Inside each profile directory, some information will be saved in `info.json`,
-and all media will be downloaded to `photos/` and `videos/`.
+A fork of [onlyfans-dl](https://github.com/k0rnh0li0/onlyfans-dl) with more features and options!
 
-DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. ( 
-[#8](https://github.com/k0rnh0li0/onlyfans-dl/issues/8)
-[#25](https://github.com/k0rnh0li0/onlyfans-dl/issues/25)
-[#28](https://github.com/k0rnh0li0/onlyfans-dl/issues/28)
-[#29](https://github.com/k0rnh0li0/onlyfans-dl/issues/29)
-[#33](https://github.com/k0rnh0li0/onlyfans-dl/issues/33)
-[#44](https://github.com/k0rnh0li0/onlyfans-dl/issues/44)
-[#45](https://github.com/k0rnh0li0/onlyfans-dl/issues/45)
-)
+onlyfans-dl will create a directory named after the profile in the current working directory.\
+A subdirectory structure will be built depending on the options set.\
+Any existing media will be skipped, not redownloaded.\
+Content will be named as DATE_ID (e.g 2021-04-17_123456.jpg)\
 
-LOOK: `python -m pip install requests`
+Issues with Python may require: `python -m pip install requests`
+
+## Features
+*Choose what type of content to download (photos, videos, posts, stories, messages, purchases, archived)
+*Choose to create subfolders for each of the above, or combine them all into one folder
+*Choose to sort posts with more than one photo into albums (subfolders)
+*Download everything, or only the last **n** days of content
 
 ## Usage
-`./onlyfans-dl.py <profile> <accessToken>`
+First make sure to set your user-agent in the script and configuring your options.\
+`./onlyfans-dl.py <profile> <sess cookie> [optional: max age (integer)]`
 * `<profile>` - the username of the profile to download
-* `<accessToken>` - your session's auth token (see below for how to find this)
+* `<sess cookie>` - your session's auth token (see below for how to find this)
+* `[max age]` - Optional: Only get posts from the last **n** days (integer)
 
 ## Access Token
-OnlyFans does a bunch of captcha schit in the login, so I wasn't able to automate the login
-process. It's very easy to get your auth token though, here's how:
+OnlyFans has captchas, so I can't automate login.\
+You need your browser's user-agent, and onlyfans session cookie. Here's how to get them
 
-- Open your browser.
-- After checking the value of your User-Agent (you can do this [here](https://whatismybrowser.com/detect/what-is-my-user-agent)),
-copy it, and put it in the value of the `User-Agent` key of `API_HEADER` in `onlyfans-dl.py`.
-- Login to OnlyFans as normal.
-- Once you have logged in, open the Storage Inspector (`SHIFT+F9` on FireFox). This will be under
-the "Application" tab of Chrome DevTools.
+- Get your user-agent [here](https://whatismybrowser.com/detect/what-is-my-user-agent) or my fav [ipchicken](https://ipchicken.com/)
+  - copy it into the `User-Agent` key of `API_HEADER` in `onlyfans-dl.py`
+- Login to OnlyFans as normal
+- Open the dev console Storage Inspector (`SHIFT+F9` on FireFox). or the "Application" tab of Chrome DevTools
 - Click Cookies -> https://onlyfans.com
 - Copy the value of the `sess` cookie, that's your access token.
 
-Once you have your access token, don't logout or otherwise end your session until you have
-finished downloading content with onlyfans-dl.
+Once you have your access token, don't logout or otherwise end your session until you have finished downloading content with onlyfans-dl.
 
 ## Contributing
 
-PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if
-you would like to extend/modify the functionality of this script.
+PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if you would like to extend/modify the functionality of this script.
