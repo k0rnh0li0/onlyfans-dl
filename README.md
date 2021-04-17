@@ -9,7 +9,7 @@ A subdirectory structure will be built depending on the options set.\
 Any existing media will be skipped, not redownloaded.\
 Content will be named as DATE_ID e.g. 2021-04-17_123456.jpg
 
-###Requires
+### Requires
 Requires Python3 and 'requests': `python -m pip install requests`
 
 ## Features
