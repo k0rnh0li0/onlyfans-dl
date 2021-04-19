@@ -230,7 +230,7 @@ if __name__ == "__main__":
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
     if os.path.isdir("profiles/" + PROFILE):
-        print("\nProfiles/" + PROFILE + " exists.")
+        print("\nThe folder profiles/" + PROFILE + " exists.")
         print("Media already present will not be re-downloaded.")
 
     assure_dir("profiles")
