@@ -109,6 +109,8 @@ def download_public_files():
     public_files = ["avatar", "header"]
     for public_file in public_files:
         source = PROFILE_INFO[public_file]
+        if source is None:
+            continue
         id = get_id_from_path(source)
         file_type = re.findall("\.\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
@@ -214,12 +216,12 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # check the access token, pull user info
-
-    API_HEADER["access-token"] = ACCESS_TOKEN
+    
+    API_HEADER["Cookie"] = "sess=" + ACCESS_TOKEN
 
     print("Getting user auth info... ")
 
-    USER_INFO = get_user_info("customer")
+    USER_INFO = get_user_info("me")
     API_HEADER["user-id"] = str(USER_INFO["id"])
 
     print("Getting target profile info...")
