@@ -232,18 +232,18 @@ if __name__ == "__main__":
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
     if os.path.isdir("profiles/" + PROFILE):
-        print("\nProfiles/" + PROFILE + " exists.")
-        print("Media already present will not be re-downloaded.")
+        print(f"\nThe profile {PROFILE} exists.")
+        print("Existing files will not be re-downloaded.")
 
     assure_dir("profiles")
-    assure_dir("profiles/" + PROFILE)
-    assure_dir("profiles/" + PROFILE + "/avatar")
-    assure_dir("profiles/" + PROFILE + "/header")
-    assure_dir("profiles/" + PROFILE + "/photos")
-    assure_dir("profiles/" + PROFILE + "/videos")
-    assure_dir("profiles/" + PROFILE + "/archived")
-    assure_dir("profiles/" + PROFILE + "/archived/photos")
-    assure_dir("profiles/" + PROFILE + "/archived/videos")
+    assure_dir(f"profiles/{PROFILE})
+    assure_dir(f"profiles/{PROFILE}/avatar")
+    assure_dir(f"profiles/{PROFILE}/header")
+    assure_dir(f"profiles/{PROFILE}/photos")
+    assure_dir(f"profiles/{PROFILE}/videos")
+    assure_dir(f"profiles/{PROFILE}/archived")
+    assure_dir(f"profiles/{PROFILE}/archived/photos")
+    assure_dir(f"profiles/{PROFILE}/archived/videos")
 
     # first save profile info
     print("Saving profile info...")
