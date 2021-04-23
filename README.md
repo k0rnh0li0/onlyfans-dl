@@ -45,7 +45,7 @@ finished downloading content with onlyfans-dl.
 
 ## Updates
 You need to untrack your config file first:
-`git rm config.json`
+`git rm --cached config.json`
 You can then do a pull for updates
 `git pull`
 
