@@ -44,7 +44,10 @@ Once you have your access token, don't logout or otherwise end your session unti
 finished downloading content with onlyfans-dl.
 
 ## Updates
-You should be able to just git pull for updates.
+You need to untrack your config file first:
+`git rm config.json`
+You can then do a pull for updates
+`git pull`
 
 ## Contributing
 Please open an issue if you have problems running this.
