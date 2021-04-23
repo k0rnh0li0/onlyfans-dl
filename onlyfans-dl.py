@@ -236,7 +236,7 @@ if __name__ == "__main__":
         print("Existing files will not be re-downloaded.")
 
     assure_dir("profiles")
-    assure_dir(f"profiles/{PROFILE})
+    assure_dir(f"profiles/{PROFILE}")
     assure_dir(f"profiles/{PROFILE}/avatar")
     assure_dir(f"profiles/{PROFILE}/header")
     assure_dir(f"profiles/{PROFILE}/photos")
