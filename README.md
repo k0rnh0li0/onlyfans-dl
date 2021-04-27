@@ -50,7 +50,6 @@ You can then do a pull for updates
 `git pull`
 
 ## Contributing
-Please open an issue if you have problems running this.
 
 PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if
 you would like to extend/modify the functionality of this script.
