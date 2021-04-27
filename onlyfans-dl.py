@@ -197,7 +197,7 @@ if __name__ == "__main__":
     for i in config.keys():
         globals()[i] = config[i]
     
-    #print(f"{POST_LIMIT}\n{URL}\n{API_URL}\n{APP_TOKEN}\n{USER_INFO}\n{DEBUG}\n{PROFILE}\n{PROFILE_INFO}\n{PROFILE_ID}\n{API_HEADER}\n{ACCESS_TOKEN}")
+    #print(f"{POST_LIMIT}\n{URL}\n{API_URL}\n{APP_TOKEN}\n{USER_INFO}\n{PROFILE}\n{PROFILE_INFO}\n{PROFILE_ID}\n{API_HEADER}\n{ACCESS_TOKEN}")
     if ACCESS_TOKEN == "put-token-here" or not ACCESS_TOKEN:
         
         print("Make sure you configure config.json")
