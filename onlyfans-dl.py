@@ -71,9 +71,7 @@ def api_request(endpoint, getdata = None, postdata = None):
                     posts_num = len(list_extend)
                     
                     if posts_num < 100:
-                        break
-
-                    if posts_num < 100:
+                        list_base.extend(list_extend)
                         break
                         
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
