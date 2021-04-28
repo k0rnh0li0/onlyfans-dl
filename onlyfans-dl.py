@@ -50,46 +50,45 @@ def api_request(endpoint, getdata = None, postdata = None):
         for i in getdata:
             getparams[i] = getdata[i]
 
-    if postdata is None:
-        if getdata is not None:
-            # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
-
-            list_base = requests.get(URL + API_URL + endpoint,
-                        headers=API_HEADER,
-                        params=getparams).json()
-            posts_num = len(list_base)
-
-            if posts_num >= 100:
-                beforePublishTime = list_base[99]['postedAtPrecise']
-                getparams['beforePublishTime'] = beforePublishTime
-
-                while posts_num == 100:
-                    # Extract posts
-                    list_extend = requests.get(URL + API_URL + endpoint,
-                                    headers=API_HEADER,
-                                    params=getparams).json()
-                    posts_num = len(list_extend)
-                    
-                    if posts_num < 100:
-                        list_base.extend(list_extend)
-                        break
-                        
-                    # Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
-                    getparams['beforePublishTime'] = beforePublishTime
-                    # Merge with previous posts
-                    list_base.extend(list_extend)
-
-            return list_base
-        else:
-            return requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams)
-    else:
+    if postdata is not None:
         return requests.post(URL + API_URL + endpoint + "?app-token=" + APP_TOKEN,
                              headers=API_HEADER,
                              params=getparams,
                              data=postdata)
+
+    if getdata is None:
+        return requests.get(URL + API_URL + endpoint,
+                        headers=API_HEADER,
+                        params=getparams)
+    # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
+
+    list_base = requests.get(URL + API_URL + endpoint,
+                headers=API_HEADER,
+                params=getparams).json()
+    posts_num = len(list_base)
+
+    if posts_num >= 100:
+        beforePublishTime = list_base[99]['postedAtPrecise']
+        getparams['beforePublishTime'] = beforePublishTime
+
+        while posts_num == 100:
+            # Extract posts
+            list_extend = requests.get(URL + API_URL + endpoint,
+                            headers=API_HEADER,
+                            params=getparams).json()
+            posts_num = len(list_extend)
+
+            if posts_num < 100:
+                list_base.extend(list_extend)
+                break
+
+            # Re-add again the updated beforePublishTime/postedAtPrecise params
+            beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
+            getparams['beforePublishTime'] = beforePublishTime
+            # Merge with previous posts
+            list_base.extend(list_extend)
+
+    return list_base
 
 # /users/<profile>
 # get information about <profile>
@@ -113,7 +112,7 @@ def download_public_files():
         if source is None:
             continue
         id = get_id_from_path(source)
-        file_type = re.findall("\.\w+", source)[-1]
+        file_type = re.findall("\\.\\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
         if not os.path.isfile("profiles/" + PROFILE + path):
             print("Downloading " + public_file + "...")
@@ -126,11 +125,11 @@ def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
+    if media["type"] not in ["photo", "video"] or not media['canView']:
         return
 
     # find extension
-    ext = re.findall('\.\w+\?', source)
+    ext = re.findall('\\.\\w+\\?', source)
     if len(ext) == 0:
         return
     ext = ext[0][:-1]
@@ -155,8 +154,7 @@ def download_file(source, path):
 def get_id_from_path(path):
     last_index = path.rfind("/")
     second_last_index = path.rfind("/", 0, last_index - 1)
-    id = path[second_last_index+1:last_index]
-    return id
+    return path[second_last_index+1:last_index]
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
