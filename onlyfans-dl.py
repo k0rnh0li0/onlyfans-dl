@@ -100,6 +100,8 @@ def get_user_info(profile):
     info = api_request("/users/" + profile).json()
     if "error" in info:
         print("\nERROR: " + info["error"]["message"])
+        print("\nCheck that the script is updated to the latest or that your User-Agent/Access token are correct.")
+        print("\nIf you're still having issues, open an issue: https://github.com/k0rnh0li0/onlyfans-dl/issues/new/choose")
         # bail, we need info for both profiles to be correct
         exit()
     return info
