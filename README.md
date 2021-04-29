@@ -22,25 +22,32 @@ DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. (
 LOOK: `python -m pip install requests`
 
 ## Usage
-`./onlyfans-dl.py <profile> <accessToken>`
+`./onlyfans-dl.py <profile>`
 * `<profile>` - the username of the profile to download
-* `<accessToken>` - your session's auth token (see below for how to find this)
 
 ## Access Token
 OnlyFans does a bunch of captcha schit in the login, so I wasn't able to automate the login
 process. It's very easy to get your auth token though, here's how:
 
 - Open your browser.
+
 - After checking the value of your User-Agent (you can do this [here](https://whatismybrowser.com/detect/what-is-my-user-agent)),
-copy it, and put it in the value of the `User-Agent` key of `API_HEADER` in `onlyfans-dl.py`.
+copy it, and put it in the value of the `User-Agent` key of `API_HEADER` in `config.json`.
 - Login to OnlyFans as normal.
 - Once you have logged in, open the Storage Inspector (`SHIFT+F9` on FireFox). This will be under
 the "Application" tab of Chrome DevTools.
 - Click Cookies -> https://onlyfans.com
 - Copy the value of the `sess` cookie, that's your access token.
+- put this in the value of the `ACCESS_TOKEN` key in `config.json`
 
 Once you have your access token, don't logout or otherwise end your session until you have
 finished downloading content with onlyfans-dl.
+
+## Updates
+You need to untrack your config file first:
+`git rm --cached config.json`
+You can then do a pull for updates
+`git pull`
 
 ## Contributing
 

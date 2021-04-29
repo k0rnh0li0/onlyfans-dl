@@ -17,32 +17,23 @@ import requests
 import time
 import datetime as dt
 
-# maximum number of posts to index
-# DONT CHANGE THAT
-POST_LIMIT = "100"
-
-# api info
-URL = "https://onlyfans.com"
-API_URL = "/api2/v2"
-
-#\TODO dynamically get app token
-# Note: this is not an auth token
-APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
-
-# user info from /users/customer
+# Initialize variables (Purely cosmetic to stop linters from throwing errors)
+POST_LIMIT = ""
+URL = ""
+API_URL = ""
+APP_TOKEN = ""
 USER_INFO = {}
-
-# target profile
 PROFILE = ""
-# profile data from /users/<profile>
 PROFILE_INFO = {}
 PROFILE_ID = ""
+API_HEADER = {}
+ACCESS_TOKEN = ""
 
-API_HEADER = {
-    "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0",
-    "Accept-Encoding": "gzip, deflate"
-}
+# move dynamic data out of the __main__
+# config.json template added to git and gitignored.
+def parsed_config(filename):
+    with open(f"{filename}",'r') as f:
+        return json.load(f)
 
 # helper function to make sure a dir is present
 def assure_dir(path):
@@ -59,45 +50,45 @@ def api_request(endpoint, getdata = None, postdata = None):
         for i in getdata:
             getparams[i] = getdata[i]
 
-    if postdata is None:
-        if getdata is not None:
-            # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
-
-            list_base = requests.get(URL + API_URL + endpoint,
-                        headers=API_HEADER,
-                        params=getparams).json()
-            posts_num = len(list_base)
-
-            if posts_num >= 100:
-                beforePublishTime = list_base[99]['postedAtPrecise']
-                getparams['beforePublishTime'] = beforePublishTime
-
-                while posts_num == 100:
-                    # Extract posts
-                    list_extend = requests.get(URL + API_URL + endpoint,
-                                    headers=API_HEADER,
-                                    params=getparams).json()
-                    posts_num = len(list_extend)
-                    
-                    if posts_num < 100:
-                        break
-
-                    # Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
-                    getparams['beforePublishTime'] = beforePublishTime
-                    # Merge with previous posts
-                    list_base.extend(list_extend)
-
-            return list_base
-        else:
-            return requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams)
-    else:
+    if postdata is not None:
         return requests.post(URL + API_URL + endpoint + "?app-token=" + APP_TOKEN,
                              headers=API_HEADER,
                              params=getparams,
                              data=postdata)
+
+    if getdata is None:
+        return requests.get(URL + API_URL + endpoint,
+                        headers=API_HEADER,
+                        params=getparams)
+    # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
+
+    list_base = requests.get(URL + API_URL + endpoint,
+                headers=API_HEADER,
+                params=getparams).json()
+    posts_num = len(list_base)
+
+    if posts_num >= 100:
+        beforePublishTime = list_base[99]['postedAtPrecise']
+        getparams['beforePublishTime'] = beforePublishTime
+
+        while posts_num == 100:
+            # Extract posts
+            list_extend = requests.get(URL + API_URL + endpoint,
+                            headers=API_HEADER,
+                            params=getparams).json()
+            posts_num = len(list_extend)
+
+            if posts_num < 100:
+                list_base.extend(list_extend)
+                break
+
+            # Re-add again the updated beforePublishTime/postedAtPrecise params
+            beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
+            getparams['beforePublishTime'] = beforePublishTime
+            # Merge with previous posts
+            list_base.extend(list_extend)
+
+    return list_base
 
 # /users/<profile>
 # get information about <profile>
@@ -106,6 +97,8 @@ def get_user_info(profile):
     info = api_request("/users/" + profile).json()
     if "error" in info:
         print("\nERROR: " + info["error"]["message"])
+        print("\nCheck that the script is updated to the latest or that your User-Agent/Access token are correct.")
+        print("\nIf you're still having issues, open an issue: https://github.com/k0rnh0li0/onlyfans-dl/issues/new/choose")
         # bail, we need info for both profiles to be correct
         exit()
     return info
@@ -119,7 +112,7 @@ def download_public_files():
         if source is None:
             continue
         id = get_id_from_path(source)
-        file_type = re.findall("\.\w+", source)[-1]
+        file_type = re.findall("\\.\\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
         if not os.path.isfile("profiles/" + PROFILE + path):
             print("Downloading " + public_file + "...")
@@ -132,11 +125,11 @@ def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
+    if media["type"] not in ["photo", "video"] or not media['canView']:
         return
 
     # find extension
-    ext = re.findall('\.\w+\?', source)
+    ext = re.findall('\\.\\w+\\?', source)
     if len(ext) == 0:
         return
     ext = ext[0][:-1]
@@ -161,8 +154,7 @@ def download_file(source, path):
 def get_id_from_path(path):
     last_index = path.rfind("/")
     second_last_index = path.rfind("/", 0, last_index - 1)
-    id = path[second_last_index+1:last_index]
-    return id
+    return path[second_last_index+1:last_index]
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
@@ -196,8 +188,18 @@ def download_posts(cur_count, posts, is_archived):
     return cur_count
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./onlyfans-dl <profile> <accessToken>")
+
+    # Parses json to variables
+    # Ignore linters that claim variables are undefined
+    config = parsed_config("config.json")
+    for i in config.keys():
+        globals()[i] = config[i]
+    
+    #print(f"{POST_LIMIT}\n{URL}\n{API_URL}\n{APP_TOKEN}\n{USER_INFO}\n{PROFILE}\n{PROFILE_INFO}\n{PROFILE_ID}\n{API_HEADER}\n{ACCESS_TOKEN}")
+    if ACCESS_TOKEN == "put-token-here" or not ACCESS_TOKEN:
+        
+        print("Make sure you configure config.json")
+        print("Usage: ./onlyfans-dl <profile>")
         print("See README for instructions.")
         exit()
 
@@ -210,7 +212,9 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # check the access token, pull user info
-    API_HEADER["Cookie"] = "sess=" + sys.argv[2]
+    
+    API_HEADER["Cookie"] = "sess=" + ACCESS_TOKEN
+
     print("Getting user auth info... ")
 
     USER_INFO = get_user_info("me")
@@ -224,18 +228,18 @@ if __name__ == "__main__":
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
     if os.path.isdir("profiles/" + PROFILE):
-        print("\nThe folder profiles/" + PROFILE + " exists.")
-        print("Media already present will not be re-downloaded.")
+        print(f"\nThe profile {PROFILE} exists.")
+        print("Existing files will not be re-downloaded.")
 
     assure_dir("profiles")
-    assure_dir("profiles/" + PROFILE)
-    assure_dir("profiles/" + PROFILE + "/avatar")
-    assure_dir("profiles/" + PROFILE + "/header")
-    assure_dir("profiles/" + PROFILE + "/photos")
-    assure_dir("profiles/" + PROFILE + "/videos")
-    assure_dir("profiles/" + PROFILE + "/archived")
-    assure_dir("profiles/" + PROFILE + "/archived/photos")
-    assure_dir("profiles/" + PROFILE + "/archived/videos")
+    assure_dir(f"profiles/{PROFILE}")
+    assure_dir(f"profiles/{PROFILE}/avatar")
+    assure_dir(f"profiles/{PROFILE}/header")
+    assure_dir(f"profiles/{PROFILE}/photos")
+    assure_dir(f"profiles/{PROFILE}/videos")
+    assure_dir(f"profiles/{PROFILE}/archived")
+    assure_dir(f"profiles/{PROFILE}/archived/photos")
+    assure_dir(f"profiles/{PROFILE}/archived/videos")
 
     # first save profile info
     print("Saving profile info...")
