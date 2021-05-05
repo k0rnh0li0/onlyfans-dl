@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
 #
 # OnlyFans Profile Downloader/Archiver
 # KORNHOLIO 2020
@@ -7,7 +7,7 @@
 #
 # This program is Free Software, licensed under the
 # terms of GPLv3. See LICENSE.txt for details.
-
+import copy
 import re
 import os
 import sys
@@ -16,16 +16,27 @@ import shutil
 import requests
 import time
 import datetime as dt
+from urllib.parse import urlencode, urlparse
+import hashlib
+from requests import sessions
+
+
+# BEGIN USER CONFIG
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:88.0) Gecko/20100101 Firefox/88.0"  # Get from browser
+AUTH_ID = 12345678                              # Get 'auth_id' from browser cookies
+AUTH_HASH = 'd3bfec9ef74682966e864d371e997ad4'  # Get 'auth_hash' from browser cookies
+# END USER CONFIG
+
 
 # maximum number of posts to index
-# DONT CHANGE THAT
+# DON'T CHANGE THIS
 POST_LIMIT = "100"
 
 # api info
 URL = "https://onlyfans.com"
 API_URL = "/api2/v2"
 
-#\TODO dynamically get app token
+# TODO dynamically get app token
 # Note: this is not an auth token
 APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
 
@@ -39,19 +50,69 @@ PROFILE_INFO = {}
 PROFILE_ID = ""
 
 API_HEADER = {
+    "user-id": f"{AUTH_ID}",
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0",
+    "User-Agent": USER_AGENT,
     "Accept-Encoding": "gzip, deflate"
 }
+
+
+def create_signed_headers(link: str):
+    # Users: 300000 | Creators: 301000
+    auth_id = API_HEADER['user-id']
+    time2 = str(int(round(time.time())))
+    # time2 = str(1620203709)
+    path = urlparse(link).path
+    query = urlparse(link).query
+    path = path if not query else f"{path}?{query}"
+    static_param = "rhtNVxJh2LD3Jul5MhHcAAnFMysnLlct"
+    a = [static_param, time2, path, auth_id]
+    msg = "\n".join(a)
+    # print(f'CREATING SIGNED HEADER: msg={msg}')
+    message = msg.encode("utf-8")
+    hash_object = hashlib.sha1(message)
+    sha_1_sign = hash_object.hexdigest()
+    sha_1_b = sha_1_sign.encode("ascii")
+    checksum = sum([sha_1_b[31], sha_1_b[13], sha_1_b[8], sha_1_b[3], sha_1_b[25], sha_1_b[8], sha_1_b[33], sha_1_b[25], sha_1_b[1], sha_1_b[23], sha_1_b[37], sha_1_b[11], sha_1_b[2], sha_1_b[29], sha_1_b[9], sha_1_b[7],
+                    sha_1_b[29], sha_1_b[30], sha_1_b[18], sha_1_b[25], sha_1_b[18], sha_1_b[21], sha_1_b[10], sha_1_b[37],
+                    sha_1_b[28], sha_1_b[35], sha_1_b[31], sha_1_b[5],
+                    sha_1_b[13], sha_1_b[31], sha_1_b[2], sha_1_b[9]]) + 1110
+    headers = copy.copy(API_HEADER)
+    headers["sign"] = "6:{}:{:x}:609184ae".format(
+        sha_1_sign, abs(checksum))
+    headers["time"] = time2
+    headers['referer'] = link
+    return headers
+
 
 # helper function to make sure a dir is present
 def assure_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
+
+def build_url(endpoint, getparams):
+    link = URL + API_URL + endpoint
+    if getparams:
+        link += f'?{urlencode(getparams)}'
+    return link
+
+
+def do_request(method, link, session, postdata=None):
+    request_header = create_signed_headers(link)
+    # print(f'LINK={link}, headers={request_header}, cookies={session.cookies} postdata={postdata}')
+
+    return session.request(method=method,
+                           url=link,
+                           # stream=False,
+                           # timeout=20,
+                           headers=request_header,
+                           data=postdata)
+
+
 # API request convenience function
 # getdata and postdata should both be JSON
-def api_request(endpoint, getdata = None, postdata = None):
+def api_request(endpoint, session, getdata = None, postdata = None):
     getparams = {
         "app-token": APP_TOKEN
     }
@@ -59,24 +120,23 @@ def api_request(endpoint, getdata = None, postdata = None):
         for i in getdata:
             getparams[i] = getdata[i]
 
+    link = build_url(endpoint, getparams)
+
     if postdata is None:
         if getdata is not None:
             # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
 
-            list_base = requests.get(URL + API_URL + endpoint,
-                        headers=API_HEADER,
-                        params=getparams).json()
+            list_base = do_request('GET', link, session).json()
             posts_num = len(list_base)
 
             if posts_num >= 100:
                 beforePublishTime = list_base[99]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
+                link = build_url(endpoint, getparams)
 
                 while posts_num == 100:
                     # Extract posts
-                    list_extend = requests.get(URL + API_URL + endpoint,
-                                    headers=API_HEADER,
-                                    params=getparams).json()
+                    list_extend = do_request('GET', link, session).json()
                     posts_num = len(list_extend)
                     
                     if posts_num < 100:
@@ -85,30 +145,29 @@ def api_request(endpoint, getdata = None, postdata = None):
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
                     beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
                     getparams['beforePublishTime'] = beforePublishTime
+                    link = build_url(endpoint, getparams)
                     # Merge with previous posts
                     list_base.extend(list_extend)
 
             return list_base
         else:
-            return requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams)
+            return do_request('GET', link, session)
     else:
-        return requests.post(URL + API_URL + endpoint + "?app-token=" + APP_TOKEN,
-                             headers=API_HEADER,
-                             params=getparams,
-                             data=postdata)
+        return do_request('POST', link, session, postdata=postdata)
+
 
 # /users/<profile>
 # get information about <profile>
 # <profile> = "customer" -> info about yourself
-def get_user_info(profile):
-    info = api_request("/users/" + profile).json()
+def get_user_info(profile, session):
+    info = api_request("/users/" + profile, session).json()
+    # print(f'RESPONSE: {info}')
     if "error" in info:
         print("\nERROR: " + info["error"]["message"])
         # bail, we need info for both profiles to be correct
         exit()
     return info
+
 
 # download public files like avatar and header
 new_files=0
@@ -126,6 +185,7 @@ def download_public_files():
             download_file(PROFILE_INFO[public_file], path)
             global new_files
             new_files += 1
+
 
 # download a media item and save it to the relevant directory
 def download_media(media, is_archived):
@@ -151,6 +211,7 @@ def download_media(media, is_archived):
         new_files += 1
         download_file(source, path)
 
+
 # helper to generally download files
 def download_file(source, path):
     r = requests.get(source, stream=True)
@@ -158,11 +219,13 @@ def download_file(source, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
+
 def get_id_from_path(path):
     last_index = path.rfind("/")
     second_last_index = path.rfind("/", 0, last_index - 1)
     id = path[second_last_index+1:last_index]
     return id
+
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
@@ -172,6 +235,7 @@ def calc_process_time(starttime, arraykey, arraylength):
     lefttime = dt.timedelta(seconds=(int(timeest-timeelapsed)))  # get a nicer looking timestamp this way
     timeelapseddelta = dt.timedelta(seconds=(int(timeelapsed))) # same here
     return (timeelapseddelta, lefttime, finishtime)
+
 
 # iterate over posts, downloading all media
 # returns the new count of downloaded posts
@@ -195,6 +259,7 @@ def download_posts(cur_count, posts, is_archived):
 
     return cur_count
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: ./onlyfans-dl <profile> <accessToken>")
@@ -210,15 +275,33 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # check the access token, pull user info
-    API_HEADER["Cookie"] = "sess=" + sys.argv[2]
+    API_HEADER["app-token"] = APP_TOKEN
+    API_HEADER["x-bc"] = ''
+
+    auth_id = API_HEADER['user-id']
+
+    cookies = [
+        {'name': 'auth_id', 'value': auth_id},
+        {'name': 'sess', 'value': sys.argv[2]},
+        {'name': 'auth_hash', 'value': AUTH_HASH},
+        {'name': f'auth_uniq_{auth_id}', 'value': ''},
+        {'name': f'auth_uid_{auth_id}', 'value': None},
+    ]
+
     print("Getting user auth info... ")
 
-    USER_INFO = get_user_info("me")
+    session = sessions.Session()
+    for cookie in cookies:
+        session.cookies.set(**cookie)
+
+    USER_INFO = get_user_info("me", session)
+
     API_HEADER["user-id"] = str(USER_INFO["id"])
+    API_HEADER["x-bc"] = ''
 
     print("Getting target profile info...")
     PROFILE = sys.argv[1]
-    PROFILE_INFO = get_user_info(PROFILE)
+    PROFILE_INFO = get_user_info(PROFILE, session)
     PROFILE_ID = str(PROFILE_INFO["id"])
 
     print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
@@ -259,13 +342,16 @@ if __name__ == "__main__":
 
     # get all user posts
     print("Finding photos...", end=' ', flush=True)
-    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
+    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", session, getdata={"limit": POST_LIMIT})
+    # print(f'RESPONSE: {photo_posts}')
     print("Found " + str(len(photo_posts)) + " photos.")
     print("Finding videos...", end=' ', flush=True)
-    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
+    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", session, getdata={"limit": POST_LIMIT})
+    # print(f'RESPONSE: {video_posts}')
     print("Found " + str(len(video_posts)) + " videos.")
     print("Finding archived content...", end=' ', flush=True)
-    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
+    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", session, getdata={"limit": POST_LIMIT})
+    # print(f'RESPONSE: {archived_posts}')
     print("Found " + str(len(archived_posts)) + " archived posts.")
     postcount = len(photo_posts) + len(video_posts)
     archived_postcount = len(archived_posts)
@@ -274,7 +360,7 @@ if __name__ == "__main__":
         exit()
 
     total_count = postcount + archived_postcount
-        
+
     print("Found " + str(total_count) + " posts. Downloading media...")
 
     # get start time for estimation purposes
