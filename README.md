@@ -27,7 +27,6 @@ First make sure to set your session variables in the script and configure your o
 
 `./onlyfans-dl.py <profile> [optional: max age (integer)]`
 * `<profile>` - the username of the profile to download
-* `<sess cookie>` - your session's auth token (see below for how to find this)
 * `[max age]` - Optional: Only get posts from the last &lt;integer&gt; days
 
 ## Session Variables
