@@ -6,6 +6,7 @@ import json
 import shutil
 import pathlib
 import requests
+import hashlib
 from datetime import datetime, timedelta
 
 ######################
@@ -21,46 +22,63 @@ ARCHIVED = True
 STORIES = True
 MESSAGES = True
 PURCHASED = True
-#HIGHLIGHTS not supported
 USE_SUB_FOLDERS = True # use content type subfolders (messgaes/archived/stories/purchased), or download everything to /profile/photos and /profile/videos
-API_HEADER = { # User-Agent must be updated and exact
+API_HEADER = {
 	"Accept": "application/json, text/plain, */*",
-	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
-	"Accept-Encoding": "gzip, deflate"
+	"Accept-Encoding": "gzip, deflate",
+	"app-token": "33d57ade8c02dbc5a333db99ff9ae26a",
+	#Set the following
+	"user-id": "#", #set once, static
+	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0", #Change immediately when browser updates, or it will log you out
+	"x-bc": "#", #changes on login
+	"Cookie": "sess=#" #changes on login
 }
 ######################
 # END CONFIGURATIONS #
 ######################
 
 API_URL = "https://onlyfans.com/api2/v2"
-APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
-USER_INFO = {}
-PROFILE = ""
-PROFILE_INFO = {}
-PROFILE_ID = ""
-MAX_AGE = ""
 new_files = 0
+MAX_AGE = 0
+
+def create_signed_headers(link, queryParams):
+	global API_HEADER
+	path = "/api2/v2" + link
+	if(queryParams):
+		query = '&'.join('='.join((key,val)) for (key,val) in queryParams.items())
+		path = f"{path}?{query}"
+	unixtime = str(int(datetime.now().timestamp()))
+	msg = "\n".join([dynamic_rules["static_param"], unixtime, path, API_HEADER["user-id"]])
+	message = msg.encode("utf-8")
+	hash_object = hashlib.sha1(message)
+	sha_1_sign = hash_object.hexdigest()
+	sha_1_b = sha_1_sign.encode("ascii")
+	checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]])+dynamic_rules["checksum_constant"]
+	API_HEADER["sign"] = dynamic_rules["format"].format(sha_1_sign, abs(checksum))
+	API_HEADER["time"] = unixtime
+	return
 
 
 def api_request(endpoint, getuserinfo = False):
-	posts_limit = 100 # API limit for single query, can not incrase
-	getparams = { "app-token": APP_TOKEN, "limit": posts_limit }
+	posts_limit = 10
+	getParams = { "app-token": "33d57ade8c02dbc5a333db99ff9ae26a", "limit": str(posts_limit), "order": "publish_date_asc"}
 	if(MAX_AGE):
-		getparams['afterPublishTime'] = MAX_AGE + ".000000"
+		getParams['afterPublishTime'] = str(MAX_AGE) + ".000000"
+	create_signed_headers(endpoint, getParams)
 	if getuserinfo:
-		return requests.get(API_URL + endpoint, headers=API_HEADER, params=getparams)
-	list_base = requests.get(API_URL + endpoint, headers=API_HEADER, params=getparams).json()
+		return requests.get(API_URL + endpoint, headers=API_HEADER, params=getParams)
+	list_base = requests.get(API_URL + endpoint, headers=API_HEADER, params=getParams).json()
 
-	# Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
+	# Fixed the issue with the maximum limit of 10 posts by creating a kind of "pagination"
 	if len(list_base) >= posts_limit:
-		getparams['beforePublishTime'] = list_base[len(list_base)-1]['postedAtPrecise']
-
-		while len(list_base) >= posts_limit:
-			list_extend = requests.get(API_URL + endpoint, headers=API_HEADER, params=getparams).json()
-			getparams['beforePublishTime'] = list_extend[len(list_extend)-1]['postedAtPrecise']
+		getParams['afterPublishTime'] = list_base[len(list_base)-1]['postedAtPrecise']
+		while 1:
+			create_signed_headers(endpoint, getParams)
+			list_extend = requests.get(API_URL + endpoint, headers=API_HEADER, params=getParams).json()
 			list_base.extend(list_extend) # Merge with previous posts
 			if len(list_extend) < posts_limit:
 				break
+			getParams['afterPublishTime'] = list_extend[len(list_extend)-1]['postedAtPrecise']
 	return list_base
 
 
@@ -128,25 +146,24 @@ def get_content(MEDIATYPE, API_LOCATION):
  
 
 if __name__ == "__main__":
-	if len(sys.argv) < 3:
-		print("Usage: ./onlyfans-dl <profile> <sess cookie> [optional: only get last n days of posts (integer)]")
-		print("Get OF 'sess' Cookie from dev console")
-		print("Update User Agent: https://ipchicken.com/")		  
+	if len(sys.argv) < 2:
+		print("\nUsage: ./onlyfans-dl.py <profile> [optional: only get last <integer> days of posts]\n")
+		print("Make sure to update the session variables at the top of this script")
+		print("Get OF 'sess' Cookie from dev console\nGet x-bc and user-id HTTP headers from dev console")
+		print("Update User Agent: https://ipchicken.com/\n")
 		exit()
-
-	API_HEADER["Cookie"] = "sess=" + sys.argv[2]
-	USER_INFO = get_user_info("me")
-	API_HEADER["user-id"] = str(USER_INFO["id"])
+	
+	#Get the rules for the signed headers dynamically, as OF has made these fluid to try to create download fatigue for scripts like this
+	dynamic_rules = requests.get('https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
 	PROFILE = sys.argv[1]
-	PROFILE_INFO = get_user_info(PROFILE)
-	PROFILE_ID = str(PROFILE_INFO["id"])
+	PROFILE_ID = str(get_user_info(PROFILE)["id"])
 
 	if os.path.isdir(PROFILE):
 		print("\n" + PROFILE + " exists.\nDownloading new media, skipping pre-existing.")
 	else:
 		print("\nDownloading content to " + PROFILE)
-	if(len(sys.argv) >= 4 and sys.argv[3].isnumeric()):
-		MAX_AGE = (datetime.today() - timedelta(int(sys.argv[3]))).strftime("%s")
+	if(len(sys.argv) >= 3 and sys.argv[2].isnumeric()):
+		MAX_AGE = int((datetime.today() - timedelta(int(sys.argv[2]))).strftime("%s"))
 		print("\nGetting posts newer than " + str(datetime.utcfromtimestamp(int(MAX_AGE))) + " UTC\n")
 
 	if POSTS:
@@ -159,4 +176,3 @@ if __name__ == "__main__":
 		get_content("messages", "/chats/" + PROFILE_ID + "/messages")
 	if PURCHASED:
 		get_content("purchased", "/posts/paid")
-
