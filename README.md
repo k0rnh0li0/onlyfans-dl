@@ -9,16 +9,16 @@ A subdirectory structure will be built depending on the options set.\
 Any existing media will be skipped, not redownloaded.\
 Content will be named as DATE_ID (e.g. 2021-04-17_123456.jpg)
 
-### Requires
+#### Requires
 Requires Python3 and 'requests': `python -m pip install requests`
 
 ## Features
 * Choose what type of content to download (photos, videos, posts, stories, messages, purchases, archived)
 * Choose to create subfolders for each of the above, or combine them all into one folder
 * Choose to sort posts with more than one photo into "albums" (subfolders)
-* Download everything, or only the last <integer> days of content
+* Download everything, or only the last &lt;integer&gt; days of content
 
-### ToDo
+#### ToDo
 Add "all" profile to dynamically get list of subscribed profiles, and download recent updates from them all.\
 Add python library requirements file
 
@@ -28,17 +28,17 @@ First make sure to set your session variables in the script and configure your o
 `./onlyfans-dl.py <profile> [optional: max age (integer)]`
 * `<profile>` - the username of the profile to download
 * `<sess cookie>` - your session's auth token (see below for how to find this)
-* `[max age]` - Optional: Only get posts from the last <integer> days
+* `[max age]` - Optional: Only get posts from the last &lt;integer&gt; days
 
 ## Session Variables
 Requests to the API now need to be signed. This is an obfuscation technique from the developers to discourage scraping. Thanks for the most recent patch goes to [DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans).
 
-You need your browser's __user-agent__, onlyfans __sess__ion cookie, __x-bc__ HTTP header, and __user-id__. Here's how to get them
+You need your browser's __user-agent__, onlyfans **sess**ion cookie, __x-bc__ HTTP header, and **user-id**. Here's how to get them
 
 - Get your user-agent here [ipchicken](https://ipchicken.com/)
 - Session Cookie
   - Login to OnlyFans as normal
-  - Open the dev console Storage Inspector (`SHIFT+F9` on FireFox). or the "Application" tab of Chrome DevTools
+  - Open the dev console Storage Inspector (`SHIFT+F9` on FireFox). or the __Application__ tab of Chrome DevTools
   - Click Cookies -> https://onlyfans.com
   - Copy the value of the `sess` cookie
 - x-bc and user-id
