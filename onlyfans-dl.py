@@ -31,7 +31,7 @@ API_HEADER = {
 	"user-id": "#", #set once, static
 	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0", #Change immediately when browser updates, or it will log you out
 	"x-bc": "#", #changes on login
-	"Cookie": "sess=#" #changes on login
+	"Cookie": "sess=#" #changes on login (keep "sess=" part)
 }
 ######################
 # END CONFIGURATIONS #

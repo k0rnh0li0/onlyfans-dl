@@ -10,7 +10,7 @@ Any existing media will be skipped, not redownloaded.\
 Content will be named as DATE_ID (e.g. 2021-04-17_123456.jpg)
 
 #### Requires
-Requires Python3 and 'requests': `python -m pip install requests`
+Requires Python3.9 and 'requests': `python -m pip install requests`
 
 ## Features
 * Choose what type of content to download (photos, videos, posts, stories, messages, purchases, archived)
@@ -20,7 +20,8 @@ Requires Python3 and 'requests': `python -m pip install requests`
 
 #### ToDo
 Add "all" profile to dynamically get list of subscribed profiles, and download recent updates from them all.\
-Add python library requirements file
+Add python library requirements file.\
+Move session variables into separate config file.
 
 ## Usage
 First make sure to set your session variables in the script and configure your options.
@@ -44,7 +45,7 @@ You need your browser's __user-agent__, onlyfans **sess**ion cookie, __x-bc__ HT
   - Login to OnlyFans, goto home page
   - Open dev console `F12` -> Network tab (`Ctrl+Shift+E` in FireFox)
   - Click __Headers__ sub-tab (default)
-  - Click on one of the JSON elements and look under __request headers__ on the right
+  - Click on one of the JSON elements (may need to refresh page) and look under __request headers__ on the right
 
 There are variables for each of these values at the top of the script. Make sure to update them every time you login or your browser updates.
 
