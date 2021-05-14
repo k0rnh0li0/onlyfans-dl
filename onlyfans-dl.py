@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # OnlyFans Profile Downloader/Archiver
 # KORNHOLIO 2020
@@ -16,10 +16,24 @@ import shutil
 import requests
 import time
 import datetime as dt
+import hashlib
+
+######################
+# CONFIGURATIONS     #
+######################
+
+USER_ID = ""
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0"
+X_BC = ""
+SESS_COOKIE = ""
+
+######################
+# END CONFIGURATIONS #
+######################
 
 # maximum number of posts to index
 # DONT CHANGE THAT
-POST_LIMIT = "100"
+POST_LIMIT = "10"
 
 # api info
 URL = "https://onlyfans.com"
@@ -40,8 +54,11 @@ PROFILE_ID = ""
 
 API_HEADER = {
     "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0",
-    "Accept-Encoding": "gzip, deflate"
+    "User-Agent": USER_AGENT,
+    "Accept-Encoding": "gzip, deflate",
+    "user-id": USER_ID,
+    "x-bc": X_BC,
+    "Cookie": "sess=" + SESS_COOKIE
 }
 
 # helper function to make sure a dir is present
@@ -49,11 +66,30 @@ def assure_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
+#Every API request must be signed
+def create_signed_headers(link, queryParams):
+    global API_HEADER
+    path = "/api2/v2" + link
+    if(queryParams):
+        query = '&'.join('='.join((key,val)) for (key,val) in queryParams.items())
+        path = f"{path}?{query}"
+    unixtime = str(int(dt.datetime.now().timestamp()))
+    msg = "\n".join([dynamic_rules["static_param"], unixtime, path, API_HEADER["user-id"]])
+    message = msg.encode("utf-8")
+    hash_object = hashlib.sha1(message)
+    sha_1_sign = hash_object.hexdigest()
+    sha_1_b = sha_1_sign.encode("ascii")
+    checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]])+dynamic_rules["checksum_constant"]
+    API_HEADER["sign"] = dynamic_rules["format"].format(sha_1_sign, abs(checksum))
+    API_HEADER["time"] = unixtime
+    return
+
 # API request convenience function
 # getdata and postdata should both be JSON
 def api_request(endpoint, getdata = None, postdata = None):
     getparams = {
-        "app-token": APP_TOKEN
+        "app-token": APP_TOKEN,
+		"order": "publish_date_desc"
     }
     if getdata is not None:
         for i in getdata:
@@ -61,40 +97,46 @@ def api_request(endpoint, getdata = None, postdata = None):
 
     if postdata is None:
         if getdata is not None:
-            # Fixed the issue with the maximum limit of 100 posts by creating a kind of "pagination"
-
+            # Fixed the issue with the maximum limit of 10 posts by creating a kind of "pagination"
+			
+            create_signed_headers(endpoint, getparams)
             list_base = requests.get(URL + API_URL + endpoint,
                         headers=API_HEADER,
                         params=getparams).json()
             posts_num = len(list_base)
 
-            if posts_num >= 100:
-                beforePublishTime = list_base[99]['postedAtPrecise']
+            if posts_num >= 10:
+                beforePublishTime = list_base[9]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
-                while posts_num == 100:
+                while posts_num == 10:
                     # Extract posts
+                    create_signed_headers(endpoint, getparams)
                     list_extend = requests.get(URL + API_URL + endpoint,
                                     headers=API_HEADER,
                                     params=getparams).json()
                     posts_num = len(list_extend)
+                    # Merge with previous posts
+                    list_base.extend(list_extend)
                     
-                    if posts_num < 100:
+                    if posts_num < 10:
                         break
 
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
                     beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
                     getparams['beforePublishTime'] = beforePublishTime
-                    # Merge with previous posts
-                    list_base.extend(list_extend)
+
 
             return list_base
         else:
+            create_signed_headers(endpoint, getparams)
+            print('x')
             return requests.get(URL + API_URL + endpoint,
                             headers=API_HEADER,
                             params=getparams)
     else:
-        return requests.post(URL + API_URL + endpoint + "?app-token=" + APP_TOKEN,
+        create_signed_headers(endpoint, getparams)
+        return requests.post(URL + API_URL + endpoint,
                              headers=API_HEADER,
                              params=getparams,
                              data=postdata)
@@ -196,8 +238,8 @@ def download_posts(cur_count, posts, is_archived):
     return cur_count
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./onlyfans-dl <profile> <accessToken>")
+    if len(sys.argv) != 2:
+        print("Usage: ./onlyfans-dl <profile>")
         print("See README for instructions.")
         exit()
 
@@ -209,12 +251,8 @@ if __name__ == "__main__":
     print("~    HACKERS GUNNA HACK    ~")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-    # check the access token, pull user info
-    API_HEADER["Cookie"] = "sess=" + sys.argv[2]
-    print("Getting user auth info... ")
-
-    USER_INFO = get_user_info("me")
-    API_HEADER["user-id"] = str(USER_INFO["id"])
+    #Get the rules for the signed headers dynamically, as they may be fluid
+    dynamic_rules = requests.get('https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
 
     print("Getting target profile info...")
     PROFILE = sys.argv[1]
