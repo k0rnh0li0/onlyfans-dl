@@ -33,7 +33,7 @@ SESS_COOKIE = ""
 
 # maximum number of posts to index
 # DONT CHANGE THAT
-POST_LIMIT = "10"
+POST_LIMIT = 100
 
 # api info
 URL = "https://onlyfans.com"
@@ -89,7 +89,7 @@ def create_signed_headers(link, queryParams):
 def api_request(endpoint, getdata = None, postdata = None):
     getparams = {
         "app-token": APP_TOKEN,
-		"order": "publish_date_desc"
+        "order": "publish_date_desc"
     }
     if getdata is not None:
         for i in getdata:
@@ -105,11 +105,11 @@ def api_request(endpoint, getdata = None, postdata = None):
                         params=getparams).json()
             posts_num = len(list_base)
 
-            if posts_num >= 10:
-                beforePublishTime = list_base[9]['postedAtPrecise']
+            if posts_num >= POST_LIMIT:
+                beforePublishTime = list_base[POST_LIMIT-1]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
-                while posts_num == 10:
+                while posts_num == POST_LIMIT:
                     # Extract posts
                     create_signed_headers(endpoint, getparams)
                     list_extend = requests.get(URL + API_URL + endpoint,
@@ -119,7 +119,7 @@ def api_request(endpoint, getdata = None, postdata = None):
                     # Merge with previous posts
                     list_base.extend(list_extend)
                     
-                    if posts_num < 10:
+                    if posts_num < POST_LIMIT:
                         break
 
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
@@ -297,13 +297,13 @@ if __name__ == "__main__":
 
     # get all user posts
     print("Finding photos...", end=' ', flush=True)
-    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": POST_LIMIT})
+    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
     print("Found " + str(len(photo_posts)) + " photos.")
     print("Finding videos...", end=' ', flush=True)
-    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": POST_LIMIT})
+    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
     print("Found " + str(len(video_posts)) + " videos.")
     print("Finding archived content...", end=' ', flush=True)
-    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": POST_LIMIT})
+    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
     print("Found " + str(len(archived_posts)) + " archived posts.")
     postcount = len(photo_posts) + len(video_posts)
     archived_postcount = len(archived_posts)
