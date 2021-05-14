@@ -1,34 +1,31 @@
-# OnlyFans Profile Downloader / Archiver v2
-This tool downloads all photos/videos from an OnlyFans profile, creating a local archive.\
+THE GREAT KORNHOLIO PRESENTS
+
+# OnlyFans Profile Downloader/Archiver
+This tool downloads all photos/videos from an OnlyFans profile, creating a local archive.
 You must be subscribed to the profile to download their content.
 
-A fork of [onlyfans-dl](https://github.com/k0rnh0li0/onlyfans-dl) with more features and options!
+onlyfans-dl will create a directory called `profiles` in the repo directory. 
+Each profile you download will be stored as a subdirectory of `profiles`.
+Inside each profile directory, some information will be saved in `info.json`,
+and all media will be downloaded to `photos/` and `videos/`.
 
-onlyfans-dl will create a directory named after the profile in the current working directory.\
-A subdirectory structure will be built depending on the options set.\
-Any existing media will be skipped, not redownloaded.\
-Content will be named as DATE_ID (e.g. 2021-04-17_123456.jpg)
+DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. ( 
+[#8](https://github.com/k0rnh0li0/onlyfans-dl/issues/8)
+[#25](https://github.com/k0rnh0li0/onlyfans-dl/issues/25)
+[#28](https://github.com/k0rnh0li0/onlyfans-dl/issues/28)
+[#29](https://github.com/k0rnh0li0/onlyfans-dl/issues/29)
+[#33](https://github.com/k0rnh0li0/onlyfans-dl/issues/33)
+[#44](https://github.com/k0rnh0li0/onlyfans-dl/issues/44)
+[#45](https://github.com/k0rnh0li0/onlyfans-dl/issues/45)
+)
 
-#### Requires
-Requires Python3.9 and 'requests': `python -m pip install requests`
-
-## Features
-* Choose what type of content to download (photos, videos, posts, stories, messages, purchases, archived)
-* Choose to create subfolders for each of the above, or combine them all into one folder
-* Choose to sort posts with more than one photo into "albums" (subfolders)
-* Download everything, or only the last &lt;integer&gt; days of content
-
-#### ToDo
-Add "all" profile to dynamically get list of subscribed profiles, and download recent updates from them all.\
-Add python library requirements file.\
-Move session variables into separate config file.
+LOOK: `python -m pip install requests`
 
 ## Usage
-First make sure to set your session variables in the script and configure your options.
+First make sure to set your session variables in the script first.
 
-`./onlyfans-dl.py <profile> [optional: max age (integer)]`
+`./onlyfans-dl.py <profile>`
 * `<profile>` - the username of the profile to download
-* `[max age]` - Optional: Only get posts from the last &lt;integer&gt; days
 
 ## Session Variables
 Requests to the API now need to be signed. This is an obfuscation technique from the developers to discourage scraping. Thanks for the most recent patch goes to [DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans).
@@ -50,4 +47,7 @@ You need your browser's __user-agent__, onlyfans **sess**ion cookie, __x-bc__ HT
 There are variables for each of these values at the top of the script. Make sure to update them every time you login or your browser updates.
 
 ## Contributing
-PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if you would like to extend/modify the functionality of this script.
+
+PRs are welcome; be sure to take some time to familiarize yourself with OnlyFans' API if
+you would like to extend/modify the functionality of this script.
+
