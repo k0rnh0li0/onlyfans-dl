@@ -49,7 +49,7 @@ namespace onlyfans_dl_updater
 				Console.WriteLine(String.Join($" {_spliter}",existingProfile));
 				Console.WriteLine("Do you want to Update them ? (Y/N)");
 				var answer = Console.ReadKey();
-				if (answer.KeyChar != 'N') AddProfile(existingProfile);
+				if (answer.KeyChar != 'N' && answer.KeyChar != 'n') AddProfile(existingProfile);
 				Console.Write("\n");
 			}
 			
@@ -90,7 +90,7 @@ namespace onlyfans_dl_updater
 			End();
 		}
 		
-		//processing the arguments in cas there is any
+		//processing the arguments in case there is any
 		//(currently there is only "dontAskToClose" but not even sure if it will ever be use)
 		private static void ProcessArguments(string[] args)
 		{
@@ -117,7 +117,7 @@ namespace onlyfans_dl_updater
 			}
 		}
 
-		//Announce anything that I need, or just do a seperation
+		//Announce anything that I need, or just do a separation
 		private static void Announce(string text = "")
 		{
 			string seperator = "=========================================";
@@ -127,7 +127,7 @@ namespace onlyfans_dl_updater
 			Console.WriteLine(seperator);
 		}
 
-		//Announce a command that I launch (also serv as a seperator)
+		//Announce a command that I launch (also serv as a separator)
 		private static void AnnounceCommand(string command)
 		{
 			char newLine = '\n';
