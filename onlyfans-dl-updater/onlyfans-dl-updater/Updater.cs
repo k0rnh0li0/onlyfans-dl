@@ -9,6 +9,10 @@ namespace onlyfans_dl_updater
 {
 	class Updater
 	{
+		/// <summary>
+		/// The file containing all the profile to update
+		/// </summary>
+		public const string _updaterFile = "updater.txt";
 		public const string _pythonFileToLaunch = "onlyfans-dl.py";
 		public const string _subFolderName = "profiles";
 		public const char _spliter = ',';
@@ -16,7 +20,11 @@ namespace onlyfans_dl_updater
 		public static bool _askBeforeClosing = true;
 
 		private static List<string> _profiles;
-		
+
+		private static string currentFolder;
+		private static string subFolder;
+		private static string pythonFileFullPath;
+		private static string updaterFileFullPath;
 		static void Main(params string[] args)
 		{
 			//First, processing every arguments
@@ -30,26 +38,21 @@ namespace onlyfans_dl_updater
 				return;
 			}
 			
-			//Initialising the variables
+			#region Initialising the variables
 			_profiles = new List<string>();
-			string currentFolder = Directory.GetCurrentDirectory();
-			string subFolder = currentFolder + _slash + _subFolderName;
-			string pythonFileFullPath = currentFolder + _slash + _pythonFileToLaunch;
+			currentFolder = Directory.GetCurrentDirectory();
+			subFolder = currentFolder + _slash + _subFolderName;
+			pythonFileFullPath = currentFolder + _slash + _pythonFileToLaunch;
+			updaterFileFullPath = currentFolder + _slash + _updaterFile;
+			#endregion
 			
 			//Check if the "profiles" folders exist to get all the already downloaded profile and update them
-			if (Directory.Exists(subFolder))
+			if (HasProfileToUpdate(out var profileToUpdate))
 			{
-				var existingProfile = Directory.GetDirectories(subFolder);
-				for (int i = 0; i < existingProfile.Length; i++)
-				{
-					existingProfile[i] = existingProfile[i].Split('\\','/').LastOrDefault();
-				}
-				
-				Console.WriteLine("Currently existing profiles :");
-				Console.WriteLine(String.Join($" {_spliter}",existingProfile));
+				Console.WriteLine("Profiles you might want to update :");
+				Console.WriteLine(String.Join($" {_spliter} ",profileToUpdate));
 				Console.WriteLine("Do you want to Update them ? (Y/N)");
-				var answer = Console.ReadKey();
-				if (answer.KeyChar != 'N' && answer.KeyChar != 'n') AddProfile(existingProfile);
+				if (AskYesOrNo()) AddProfile(profileToUpdate);
 				Console.Write("\n");
 			}
 			
@@ -62,8 +65,7 @@ namespace onlyfans_dl_updater
 			//If there is an answer we process it and add it to the profiles to download
 			if (!String.IsNullOrEmpty(answerRaw))
 			{
-				string[] answer = answerRaw.Split(_spliter);
-				ProcessAnswer(answer);
+				string[] answer = ProcessProfiles(answerRaw).Split(_spliter);
 				AddProfile(answer);
 			}
 
@@ -137,9 +139,22 @@ namespace onlyfans_dl_updater
 			Console.WriteLine(text);
 			Console.WriteLine(seperator+newLine);
 		}
-
-		//Process all the answer that I get to remove the potential whitespace that a user could enter (which are not suppose to exist)
-		private static void ProcessAnswer(string[] answer)
+		
+		/// <summary>
+		/// Process all the answer that I get to remove the potential whitespace that a user could enter (which are not suppose to exist)
+		/// </summary>
+		/// <param name="answer">The answer to process</param>
+		/// <returns>The answer processed</returns>
+		private static string ProcessProfiles(string answer)
+		{
+			return Regex.Replace(answer, @"\s", String.Empty);
+		}
+		
+		/// <summary>
+		/// Process all the answer that I get to remove the potential whitespace that a user could enter (which are not suppose to exist)
+		/// </summary>
+		/// <param name="answer">The array of answer to process</param>
+		private static void ProcessProfiles(string[] answer)
 		{
 			if (answer == null) return;
 			
@@ -148,6 +163,39 @@ namespace onlyfans_dl_updater
 				//Simple regex to remove any whitespace character.
 				answer[i] = Regex.Replace(answer[i], @"\s", String.Empty);
 			}
+		}
+
+		/// <summary>
+		/// Check if we have profile to update, either by a certain text file or using the folder we already created. <br />
+		/// In the text files, no matter the whitespace, the profiles must be separate with a comma. (meaning you can put space before and after, or a new line between each)
+		/// </summary>
+		/// <param name="profileFound"></param>
+		/// <returns></returns>
+		private static bool HasProfileToUpdate(out string[] profileFound)
+		{
+			if (File.Exists(updaterFileFullPath))
+			{
+				profileFound = ProcessProfiles(File.ReadAllText(updaterFileFullPath)).Split(_spliter);
+				return true;
+			}
+			else if (Directory.Exists(subFolder))
+			{
+				profileFound = Directory.GetDirectories(subFolder);
+				for (int i = 0; i < profileFound.Length; i++)
+				{
+					profileFound[i] = profileFound[i].Split('\\', '/').LastOrDefault();
+				}
+
+				return true;
+			}
+
+			profileFound = null;
+			return false;
+		}
+		private static bool AskYesOrNo()
+		{
+			var answer = Console.ReadKey();
+			return answer.KeyChar != 'N' && answer.KeyChar != 'n';
 		}
 		
 		//Debug an entire array, in case I need it
