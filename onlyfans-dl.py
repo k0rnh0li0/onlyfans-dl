@@ -13,6 +13,7 @@ import os
 import sys
 import json
 import shutil
+import re
 import requests
 import time
 import datetime as dt
@@ -30,6 +31,9 @@ SESS_COOKIE = ""
 ######################
 # END CONFIGURATIONS #
 ######################
+
+# file regex
+FILE_REGEX = re.compile(r'\/([^?\/]+)\?')
 
 # maximum number of posts to index
 # DONT CHANGE THAT
@@ -98,7 +102,7 @@ def api_request(endpoint, getdata = None, postdata = None):
     if postdata is None:
         if getdata is not None:
             # Fixed the issue with the maximum limit of 10 posts by creating a kind of "pagination"
-			
+
             create_signed_headers(endpoint, getparams)
             list_base = requests.get(URL + API_URL + endpoint,
                         headers=API_HEADER,
@@ -118,7 +122,7 @@ def api_request(endpoint, getdata = None, postdata = None):
                     posts_num = len(list_extend)
                     # Merge with previous posts
                     list_base.extend(list_extend)
-                    
+
                     if posts_num < POST_LIMIT:
                         break
 
@@ -177,16 +181,14 @@ def download_media(media, is_archived):
     if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
         return
 
-    # find extension
-    ext = re.findall('\.\w+\?', source)
-    if len(ext) == 0:
-        return
-    ext = ext[0][:-1]
+    # pull out the actual filename
+    filename = FILE_REGEX.search(source).group(1)
 
     if is_archived:
-        path = "/archived/" + media["type"] + "s/" + id + ext
+        path = "/archived/%ss/%s" % (media["type"], filename)
     else:
-        path = "/" + media["type"] + "s/" + id + ext
+        path = "/%ss/%s" % (media["type"], filename)
+
     if not os.path.isfile("profiles/" + PROFILE + path):
         # print(path)
         global new_files
