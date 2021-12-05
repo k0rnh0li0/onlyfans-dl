@@ -58,7 +58,8 @@ API_HEADER = {
     "Accept-Encoding": "gzip, deflate",
     "user-id": USER_ID,
     "x-bc": X_BC,
-    "Cookie": "sess=" + SESS_COOKIE
+    "Cookie": "sess=" + SESS_COOKIE,
+	"app-token": APP_TOKEN
 }
 
 # helper function to make sure a dir is present
@@ -88,7 +89,6 @@ def create_signed_headers(link, queryParams):
 # getdata and postdata should both be JSON
 def api_request(endpoint, getdata = None, postdata = None):
     getparams = {
-        "app-token": APP_TOKEN,
         "order": "publish_date_desc"
     }
     if getdata is not None:
