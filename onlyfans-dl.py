@@ -154,14 +154,18 @@ def user_me():
 
 # get all subscriptions
 def get_subs():
-    SUB_LIMIT = str(user_me()["subscribesCount"])
-    params = {
-        "type": "active",
-        "sort": "desc",
-        "field": "expire_date",
-        "limit": SUB_LIMIT
-    }
-    return api_request("/subscriptions/subscribes", getparams=params).json()
+    try:
+        SUB_LIMIT = str(user_me()["subscribesCount"])
+        params = {
+            "type": "active",
+            "sort": "desc",
+            "field": "expire_date",
+            "limit": SUB_LIMIT
+        }
+        return api_request("/subscriptions/subscribes", getparams=params).json()
+    except:
+        print('Wrong Auth')
+        exit()
 
 # download public files like avatar and header
 new_files = 0
