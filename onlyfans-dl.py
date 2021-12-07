@@ -289,7 +289,6 @@ if __name__ == "__main__":
     # Select sub
     sub_dict = {}
     SELECTED_MODELS = select_sub()
-    print(SELECTED_MODELS)
 
     # start process
     for M in SELECTED_MODELS:
