@@ -18,19 +18,6 @@ import time
 import datetime as dt
 import hashlib
 
-######################
-# CONFIGURATIONS     #
-######################
-
-USER_ID = ""
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0"
-X_BC = ""
-SESS_COOKIE = ""
-
-######################
-# END CONFIGURATIONS #
-######################
-
 # maximum number of posts to index
 # DONT CHANGE THAT
 POST_LIMIT = 100
@@ -39,7 +26,7 @@ POST_LIMIT = 100
 URL = "https://onlyfans.com"
 API_URL = "/api2/v2"
 
-#\TODO dynamically get app token
+# \TODO dynamically get app token
 # Note: this is not an auth token
 APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
 
@@ -52,27 +39,33 @@ PROFILE = ""
 PROFILE_INFO = {}
 PROFILE_ID = ""
 
-API_HEADER = {
-    "Accept": "application/json, text/plain, */*",
-    "User-Agent": USER_AGENT,
-    "Accept-Encoding": "gzip, deflate",
-    "user-id": USER_ID,
-    "x-bc": X_BC,
-    "Cookie": "sess=" + SESS_COOKIE,
-	"app-token": APP_TOKEN
-}
 
 # helper function to make sure a dir is present
 def assure_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
 
-#Every API request must be signed
+# Create Auth with Json
+def create_auth():
+    with open("auth.json") as f:
+        ljson = json.load(f)
+    return {
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": ljson["user-agent"],
+        "Accept-Encoding": "gzip, deflate",
+        "user-id": ljson["user-id"],
+        "x-bc": ljson["x-bc"],
+        "Cookie": "sess=" + ljson["sess"],
+        "app-token": APP_TOKEN
+    }
+
+
+# Every API request must be signed
 def create_signed_headers(link, queryParams):
     global API_HEADER
     path = "/api2/v2" + link
-    if(queryParams):
-        query = '&'.join('='.join((key,val)) for (key,val) in queryParams.items())
+    if (queryParams):
+        query = '&'.join('='.join((key, val)) for (key, val) in queryParams.items())
         path = f"{path}?{query}"
     unixtime = str(int(dt.datetime.now().timestamp()))
     msg = "\n".join([dynamic_rules["static_param"], unixtime, path, API_HEADER["user-id"]])
@@ -80,17 +73,19 @@ def create_signed_headers(link, queryParams):
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]])+dynamic_rules["checksum_constant"]
+    checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]]) + dynamic_rules["checksum_constant"]
     API_HEADER["sign"] = dynamic_rules["format"].format(sha_1_sign, abs(checksum))
     API_HEADER["time"] = unixtime
     return
 
+
 # API request convenience function
 # getdata and postdata should both be JSON
-def api_request(endpoint, getdata = None, postdata = None):
-    getparams = {
-        "order": "publish_date_desc"
-    }
+def api_request(endpoint, getdata=None, postdata=None, getparams=None):
+    if getparams == None:
+        getparams = {
+            "order": "publish_date_desc"
+        }
     if getdata is not None:
         for i in getdata:
             getparams[i] = getdata[i]
@@ -98,48 +93,48 @@ def api_request(endpoint, getdata = None, postdata = None):
     if postdata is None:
         if getdata is not None:
             # Fixed the issue with the maximum limit of 10 posts by creating a kind of "pagination"
-			
+
             create_signed_headers(endpoint, getparams)
             list_base = requests.get(URL + API_URL + endpoint,
-                        headers=API_HEADER,
-                        params=getparams).json()
+                                     headers=API_HEADER,
+                                     params=getparams).json()
             posts_num = len(list_base)
 
             if posts_num >= POST_LIMIT:
-                beforePublishTime = list_base[POST_LIMIT-1]['postedAtPrecise']
+                beforePublishTime = list_base[POST_LIMIT - 1]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
                 while posts_num == POST_LIMIT:
                     # Extract posts
                     create_signed_headers(endpoint, getparams)
                     list_extend = requests.get(URL + API_URL + endpoint,
-                                    headers=API_HEADER,
-                                    params=getparams).json()
+                                               headers=API_HEADER,
+                                               params=getparams).json()
                     posts_num = len(list_extend)
                     # Merge with previous posts
                     list_base.extend(list_extend)
-                    
+
                     if posts_num < POST_LIMIT:
                         break
 
                     # Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime = list_extend[posts_num-1]['postedAtPrecise']
+                    beforePublishTime = list_extend[posts_num - 1]['postedAtPrecise']
                     getparams['beforePublishTime'] = beforePublishTime
-
 
             return list_base
         else:
             create_signed_headers(endpoint, getparams)
             print('x')
             return requests.get(URL + API_URL + endpoint,
-                            headers=API_HEADER,
-                            params=getparams)
+                                headers=API_HEADER,
+                                params=getparams)
     else:
         create_signed_headers(endpoint, getparams)
         return requests.post(URL + API_URL + endpoint,
                              headers=API_HEADER,
                              params=getparams,
                              data=postdata)
+
 
 # /users/<profile>
 # get information about <profile>
@@ -152,8 +147,40 @@ def get_user_info(profile):
         exit()
     return info
 
+# to get subscribesCount for displaying all subs
+def user_me():
+    me = api_request("/users/me").json()
+    if "error" in me:
+        print("\nERROR: " + me["error"]["message"])
+        # bail, we need info for both profiles to be correct
+        exit()
+    return me
+
+# get all subscriptions
+def get_subs():
+    SUB_LIMIT = str(user_me()["subscribesCount"])
+    params = {
+        "type": "active",
+        "sort": "desc",
+        "field": "expire_date",
+        "limit": SUB_LIMIT
+    }
+    return api_request("/subscriptions/subscribes", getparams=params).json()
+
+
 # download public files like avatar and header
-new_files=0
+new_files = 0
+
+def select_sub():
+    # Get Subscriptions
+    SUBS = get_subs()
+    for i in range(0, len(SUBS)):
+        sub_dict.update({i: SUBS[i]["username"]})
+
+    # Select Model
+    MODELS = input(',  '.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")
+    return [x.strip() for x in MODELS.split(',')]
+
 def download_public_files():
     public_files = ["avatar", "header"]
     for public_file in public_files:
@@ -168,6 +195,7 @@ def download_public_files():
             download_file(PROFILE_INFO[public_file], path)
             global new_files
             new_files += 1
+
 
 # download a media item and save it to the relevant directory
 def download_media(media, is_archived):
@@ -193,6 +221,7 @@ def download_media(media, is_archived):
         new_files += 1
         download_file(source, path)
 
+
 # helper to generally download files
 def download_file(source, path):
     r = requests.get(source, stream=True)
@@ -200,20 +229,23 @@ def download_file(source, path):
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
+
 def get_id_from_path(path):
     last_index = path.rfind("/")
     second_last_index = path.rfind("/", 0, last_index - 1)
-    id = path[second_last_index+1:last_index]
+    id = path[second_last_index + 1:last_index]
     return id
+
 
 def calc_process_time(starttime, arraykey, arraylength):
     timeelapsed = time.time() - starttime
-    timeest = (timeelapsed/arraykey)*(arraylength)
+    timeest = (timeelapsed / arraykey) * (arraylength)
     finishtime = starttime + timeest
     finishtime = dt.datetime.fromtimestamp(finishtime).strftime("%H:%M:%S")  # in time
-    lefttime = dt.timedelta(seconds=(int(timeest-timeelapsed)))  # get a nicer looking timestamp this way
-    timeelapseddelta = dt.timedelta(seconds=(int(timeelapsed))) # same here
+    lefttime = dt.timedelta(seconds=(int(timeest - timeelapsed)))  # get a nicer looking timestamp this way
+    timeelapseddelta = dt.timedelta(seconds=(int(timeelapsed)))  # same here
     return (timeelapseddelta, lefttime, finishtime)
+
 
 # iterate over posts, downloading all media
 # returns the new count of downloaded posts
@@ -232,16 +264,13 @@ def download_posts(cur_count, posts, is_archived):
                       "Time elapsed: %s, Estimated Time left: %s, Estimated finish time: %s" % timestats
         end = '\n' if cur_count == total_count else '\r'
         print(dwnld_stats, end=end)
-        
+
         cur_count = cur_count + 1
 
     return cur_count
 
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: ./onlyfans-dl <profile>")
-        print("See README for instructions.")
-        exit()
 
     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print("~ I AM THE GREAT KORNHOLIO ~")
@@ -251,75 +280,83 @@ if __name__ == "__main__":
     print("~    HACKERS GUNNA HACK    ~")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-    #Get the rules for the signed headers dynamically, as they may be fluid
-    dynamic_rules = requests.get('https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
+    # Get the rules for the signed headers dynamically, as they may be fluid
+    dynamic_rules = requests.get(
+        'https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
+    # Create Header
+    API_HEADER = create_auth()
 
-    print("Getting target profile info...")
-    PROFILE = sys.argv[1]
-    PROFILE_INFO = get_user_info(PROFILE)
-    PROFILE_ID = str(PROFILE_INFO["id"])
+    # Select sub
+    sub_dict = {}
+    SELECTED_MODELS = select_sub()
 
-    print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
+    # start process
+    for M in SELECTED_MODELS:
+        PROFILE = sub_dict[int(M)]
+        PROFILE_INFO = get_user_info(PROFILE)
+        PROFILE_ID = str(PROFILE_INFO["id"])
 
-    if os.path.isdir("profiles/" + PROFILE):
-        print("\nThe folder profiles/" + PROFILE + " exists.")
-        print("Media already present will not be re-downloaded.")
+        print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
-    assure_dir("profiles")
-    assure_dir("profiles/" + PROFILE)
-    assure_dir("profiles/" + PROFILE + "/avatar")
-    assure_dir("profiles/" + PROFILE + "/header")
-    assure_dir("profiles/" + PROFILE + "/photos")
-    assure_dir("profiles/" + PROFILE + "/videos")
-    assure_dir("profiles/" + PROFILE + "/archived")
-    assure_dir("profiles/" + PROFILE + "/archived/photos")
-    assure_dir("profiles/" + PROFILE + "/archived/videos")
+        if os.path.isdir("profiles/" + PROFILE):
+            print("\nThe folder profiles/" + PROFILE + " exists.")
+            print("Media already present will not be re-downloaded.")
 
-    # first save profile info
-    print("Saving profile info...")
+        assure_dir("profiles")
+        assure_dir("profiles/" + PROFILE)
+        assure_dir("profiles/" + PROFILE + "/avatar")
+        assure_dir("profiles/" + PROFILE + "/header")
+        assure_dir("profiles/" + PROFILE + "/photos")
+        assure_dir("profiles/" + PROFILE + "/videos")
+        assure_dir("profiles/" + PROFILE + "/archived")
+        assure_dir("profiles/" + PROFILE + "/archived/photos")
+        assure_dir("profiles/" + PROFILE + "/archived/videos")
 
-    sinf = {
-        "id": PROFILE_INFO["id"],
-        "name": PROFILE_INFO["name"],
-        "username": PROFILE_INFO["username"],
-        "about": PROFILE_INFO["rawAbout"],
-        "joinDate": PROFILE_INFO["joinDate"],
-        "website": PROFILE_INFO["website"],
-        "wishlist": PROFILE_INFO["wishlist"],
-        "location": PROFILE_INFO["location"],
-        "lastSeen": PROFILE_INFO["lastSeen"]
-    }
+        # first save profile info
+        print("Saving profile info...")
 
-    with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
-        json.dump(sinf, infojson)
+        sinf = {
+            "id": PROFILE_INFO["id"],
+            "name": PROFILE_INFO["name"],
+            "username": PROFILE_INFO["username"],
+            "about": PROFILE_INFO["rawAbout"],
+            "joinDate": PROFILE_INFO["joinDate"],
+            "website": PROFILE_INFO["website"],
+            "wishlist": PROFILE_INFO["wishlist"],
+            "location": PROFILE_INFO["location"],
+            "lastSeen": PROFILE_INFO["lastSeen"]
+        }
 
-    download_public_files()
+        with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
+            json.dump(sinf, infojson)
 
-    # get all user posts
-    print("Finding photos...", end=' ', flush=True)
-    photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
-    print("Found " + str(len(photo_posts)) + " photos.")
-    print("Finding videos...", end=' ', flush=True)
-    video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
-    print("Found " + str(len(video_posts)) + " videos.")
-    print("Finding archived content...", end=' ', flush=True)
-    archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
-    print("Found " + str(len(archived_posts)) + " archived posts.")
-    postcount = len(photo_posts) + len(video_posts)
-    archived_postcount = len(archived_posts)
-    if postcount + archived_postcount == 0:
-        print("ERROR: 0 posts found.")
-        exit()
+        download_public_files()
 
-    total_count = postcount + archived_postcount
-        
-    print("Found " + str(total_count) + " posts. Downloading media...")
+        # get all user posts
+        print("Finding photos...", end=' ', flush=True)
+        photo_posts = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
+        print("Found " + str(len(photo_posts)) + " photos.")
+        print("Finding videos...", end=' ', flush=True)
+        video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
+        print("Found " + str(len(video_posts)) + " videos.")
+        print("Finding archived content...", end=' ', flush=True)
+        archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
+        print("Found " + str(len(archived_posts)) + " archived posts.")
+        postcount = len(photo_posts) + len(video_posts)
+        archived_postcount = len(archived_posts)
+        if postcount + archived_postcount == 0:
+            print("ERROR: 0 posts found.")
+            exit()
 
-    # get start time for estimation purposes
-    starttime = time.time()
+        total_count = postcount + archived_postcount
 
-    cur_count = download_posts(1, photo_posts, False)
-    cur_count = download_posts(cur_count, video_posts, False)
-    download_posts(cur_count, archived_posts, True)
+        print("Found " + str(total_count) + " posts. Downloading media...")
 
-    print("Downloaded " + str(new_files) + " new files.")
+        # get start time for estimation purposes
+        starttime = time.time()
+
+        cur_count = download_posts(1, photo_posts, False)
+        cur_count = download_posts(cur_count, video_posts, False)
+        download_posts(cur_count, archived_posts, True)
+
+        print("Downloaded " + str(new_files) + " new files.")

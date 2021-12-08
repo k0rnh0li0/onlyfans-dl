@@ -22,10 +22,9 @@ DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. (
 LOOK: `python -m pip install requests`
 
 ## Usage
-First make sure to set your session variables in the script first.
+First make sure to set your session variables in auth.json first.
 
-`./onlyfans-dl.py <profile>`
-* `<profile>` - the username of the profile to download
+`./onlyfans-dl.py`
 
 ## Session Variables
 Requests to the API now need to be signed. This is an obfuscation technique from the developers to discourage scraping. Thanks for the most recent patch goes to [DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans).
