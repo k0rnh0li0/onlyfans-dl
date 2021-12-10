@@ -262,7 +262,7 @@ def calc_process_time(starttime, arraykey, arraylength):
 # returns the new count of downloaded posts
 def download_posts(cur_count, posts, is_archived):
     for k, post in enumerate(posts, start=1):
-        if not post["canViewMedia"]:
+        if "media" not in post or ("canViewMedia" in post and not post["canViewMedia"]):
             continue
 
         for media in post["media"]:
