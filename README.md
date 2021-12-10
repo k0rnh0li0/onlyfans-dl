@@ -17,9 +17,13 @@ DON'T OPEN AN ISSUE ABOUT THE REQUESTS LIBRARY. (
 [#33](https://github.com/k0rnh0li0/onlyfans-dl/issues/33)
 [#44](https://github.com/k0rnh0li0/onlyfans-dl/issues/44)
 [#45](https://github.com/k0rnh0li0/onlyfans-dl/issues/45)
+[#104](https://github.com/k0rnh0li0/onlyfans-dl/issues/104)
+[#125](https://github.com/k0rnh0li0/onlyfans-dl/issues/125)
 )
 
 LOOK: `python -m pip install requests`
+
+If you have installed requests and it still doesn't work, then this is an issue with your local environment, not onlyfans-dl.
 
 ## Usage
 First make sure to set your session variables in auth.json first.
