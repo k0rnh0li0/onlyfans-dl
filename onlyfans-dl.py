@@ -148,6 +148,7 @@ def get_user_info(profile):
     return info
 
 # to get subscribesCount for displaying all subs
+# info about yourself
 def user_me():
     me = api_request("/users/me").json()
     if "error" in me:
@@ -156,7 +157,7 @@ def user_me():
         exit()
     return me
 
-# get all subscriptions
+# get all subscriptions in json
 def get_subs():
     SUB_LIMIT = str(user_me()["subscribesCount"])
     params = {
@@ -174,12 +175,22 @@ new_files = 0
 def select_sub():
     # Get Subscriptions
     SUBS = get_subs()
+    sub_dict.update({"0": "All"})
+    ALL_LIST = []
     for i in range(0, len(SUBS)):
-        sub_dict.update({i: SUBS[i]["username"]})
+        sub_dict.update({i+1: SUBS[i]["username"]})
+    if len(sub_dict) == 1:
+        print('No models subbed')
+        exit()
 
     # Select Model
     MODELS = input(',  '.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")
-    return [x.strip() for x in MODELS.split(',')]
+    if MODELS == 0:
+        for i in range(1, len(SUBS)+1):
+            ALL_LIST.append(i)
+        return ALL_LIST
+    else:
+        return [x.strip() for x in MODELS.split(',')]
 
 def download_public_files():
     public_files = ["avatar", "header"]
