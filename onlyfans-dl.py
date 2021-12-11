@@ -185,7 +185,7 @@ def select_sub():
 
     # Select Model
     MODELS = input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")
-    if MODELS == 0:
+    if MODELS == "0":
         for i in range(1, len(SUBS)+1):
             ALL_LIST.append(i)
         return ALL_LIST
