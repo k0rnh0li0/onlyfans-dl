@@ -175,8 +175,10 @@ new_files = 0
 def select_sub():
     # Get Subscriptions
     SUBS = get_subs()
-    sub_dict.update({"0": "All"})
+    sub_dict.update({"0": "*** Download All Models ***"})
     ALL_LIST = []
+    for i in range(1, len(SUBS)+1):
+                ALL_LIST.append(i)
     for i in range(0, len(SUBS)):
         sub_dict.update({i+1: SUBS[i]["username"]})
     if len(sub_dict) == 1:
@@ -184,10 +186,10 @@ def select_sub():
         exit()
 
     # Select Model
-    MODELS = int(input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n"))
-    if MODELS == 0:
-        for i in range(1, len(SUBS)+1):
-            ALL_LIST.append(i)
+    if ARG1 == "all":
+        return ALL_LIST
+    MODELS = str((input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")))
+    if MODELS == "0":
         return ALL_LIST
     else:
         return [x.strip() for x in MODELS.split(',')]
@@ -290,6 +292,12 @@ if __name__ == "__main__":
     print("~    COOMERS GUNNA COOM    ~")
     print("~    HACKERS GUNNA HACK    ~")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
+    # Gather inputs
+    if len(sys.argv) != 2:
+        ARG1 = ""
+    else:
+        ARG1 = sys.argv[1]
 
     # Get the rules for the signed headers dynamically, as they may be fluid
     dynamic_rules = requests.get(
