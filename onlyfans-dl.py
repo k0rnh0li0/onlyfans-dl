@@ -20,7 +20,7 @@ import hashlib
 
 # maximum number of posts to index
 # DONT CHANGE THAT
-POST_LIMIT = 100
+POST_LIMIT = 10
 
 # api info
 URL = "https://onlyfans.com"
@@ -100,26 +100,18 @@ def api_request(endpoint, getdata=None, postdata=None, getparams=None):
                                      params=getparams).json()
             posts_num = len(list_base)
 
-            if posts_num >= POST_LIMIT:
-                beforePublishTime = list_base[POST_LIMIT - 1]['postedAtPrecise']
+            while posts_num > 0:
+                beforePublishTime = list_base[len(list_base) - 1]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
-                while posts_num == POST_LIMIT:
-                    # Extract posts
-                    create_signed_headers(endpoint, getparams)
-                    list_extend = requests.get(URL + API_URL + endpoint,
-                                               headers=API_HEADER,
-                                               params=getparams).json()
-                    posts_num = len(list_extend)
-                    # Merge with previous posts
+                # Extract posts
+                create_signed_headers(endpoint, getparams)
+                list_extend = requests.get(URL + API_URL + endpoint,
+                                           headers=API_HEADER,
+                                           params=getparams).json()
+                posts_num = len(list_extend)
+                if posts_num > 0:
                     list_base.extend(list_extend)
-
-                    if posts_num < POST_LIMIT:
-                        break
-
-                    # Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime = list_extend[posts_num - 1]['postedAtPrecise']
-                    getparams['beforePublishTime'] = beforePublishTime
 
             return list_base
         else:
