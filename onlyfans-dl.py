@@ -215,7 +215,7 @@ def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
+    if (media["type"] != "photo" and media["type"] != "video" and media["type"] != "gif") or not media['canView']:
         return
 
     # find extension
@@ -224,10 +224,19 @@ def download_media(media, is_archived):
         return
     ext = ext[0][:-1]
 
-    if is_archived:
-        path = "/archived/" + media["type"] + "s/" + id + ext
+    # classify the gif
+    if media["type"] == "gif":
+        type = "video"
     else:
-        path = "/" + media["type"] + "s/" + id + ext
+        type = media["type"]
+
+
+    if is_archived:
+        path = "/archived/"
+    else:
+        path = "/"
+    path += type + "s/" + id + ext
+
     if not os.path.isfile("profiles/" + PROFILE + path):
         # print(path)
         global new_files
