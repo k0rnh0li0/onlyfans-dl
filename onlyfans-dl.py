@@ -406,7 +406,7 @@ if __name__ == "__main__":
         archived_postcount = len(archived_posts)
         if postcount + archived_postcount == 0:
             print("ERROR: 0 posts found.")
-            exit()
+            continue
 
         total_count = postcount + archived_postcount
 
