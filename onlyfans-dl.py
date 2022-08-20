@@ -211,7 +211,7 @@ def download_public_files():
 
 
 # download a media item and save it to the relevant directory
-def download_media(media, is_archived):
+def download_media(media, is_archived, is_chat):
     id = str(media["id"])
     source = media["source"]["source"]
 
@@ -226,6 +226,8 @@ def download_media(media, is_archived):
 
     if is_archived:
         path = "/archived/" + media["type"] + "s/" + id + ext
+    elif is_chat:
+        path = "/chat/" + media["type"] + "s/" + id + ext
     else:
         path = "/" + media["type"] + "s/" + id + ext
     if not os.path.isfile("profiles/" + PROFILE + path):
@@ -262,14 +264,14 @@ def calc_process_time(starttime, arraykey, arraylength):
 
 # iterate over posts, downloading all media
 # returns the new count of downloaded posts
-def download_posts(cur_count, posts, is_archived):
+def download_posts(cur_count, posts, is_archived=False, is_chat=False):
     for k, post in enumerate(posts, start=1):
         if "media" not in post or ("canViewMedia" in post and not post["canViewMedia"]):
             continue
 
         for media in post["media"]:
             if 'source' in media:
-                download_media(media, is_archived)
+                download_media(media, is_archived, is_chat)
 
         # adding some nice info in here for download stats
         timestats = calc_process_time(starttime, k, total_count)
@@ -321,7 +323,32 @@ def get_all_photos(images):
 
     return images
 
+def get_all_chats(chats = []):
+    len_chats = len(chats)
+    has_more_chats = False
+    if len_chats == 20 or len_chats == 0:
+        has_more_chats = True
+    last_id = None
+    
+    while has_more_chats:
+        has_more_chats = False
+        len_chats = len(chats)
 
+        getparams = {
+            'limit': '20',
+            'skip_users': 'all',
+        }
+
+        if last_id is not None:
+            getparams['last_id'] = last_id
+
+        chat_media = api_request(f'/chats/{PROFILE_ID}/media', getparams=getparams).json()
+
+        chats.extend(chat_media['list'])
+        has_more_chats = len(chat_media['list']) == 20
+        last_id = chat_media['nextLastId']
+    return chats
+    
 if __name__ == "__main__":
 
     print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -369,6 +396,9 @@ if __name__ == "__main__":
         assure_dir("profiles/" + PROFILE + "/archived")
         assure_dir("profiles/" + PROFILE + "/archived/photos")
         assure_dir("profiles/" + PROFILE + "/archived/videos")
+        assure_dir("profiles/" + PROFILE + "/chat")
+        assure_dir("profiles/" + PROFILE + "/chat/photos")
+        assure_dir("profiles/" + PROFILE + "/chat/videos")
 
         # first save profile info
         print("Saving profile info...")
@@ -399,24 +429,28 @@ if __name__ == "__main__":
         videos = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
         video_posts = get_all_videos(videos)
         print("Found " + str(len(video_posts)) + " videos.")
+        print("Finding chat content...", end=' ', flush=True)
+        chats = get_all_chats()
+        print("Found " + str(len(chats)) + " chats.")
         print("Finding archived content...", end=' ', flush=True)
         archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
         print("Found " + str(len(archived_posts)) + " archived posts.")
-        postcount = len(photo_posts) + len(video_posts)
+        postcount = len(photo_posts) + len(video_posts) + len(chats)
         archived_postcount = len(archived_posts)
         if postcount + archived_postcount == 0:
             print("ERROR: 0 posts found.")
             exit()
 
-        total_count = postcount + archived_postcount
+        total_count = postcount + archived_postcount 
 
         print("Found " + str(total_count) + " posts. Downloading media...")
 
         # get start time for estimation purposes
         starttime = time.time()
 
-        cur_count = download_posts(1, photo_posts, False)
-        cur_count = download_posts(cur_count, video_posts, False)
-        download_posts(cur_count, archived_posts, True)
+        cur_count = download_posts(1, photo_posts)
+        cur_count = download_posts(cur_count, video_posts)
+        cur_count = download_posts(cur_count, chats, is_chat=True)
+        download_posts(cur_count, archived_posts, is_archived=True)
 
         print("Downloaded " + str(new_files) + " new files.")
