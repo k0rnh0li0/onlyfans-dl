@@ -13,10 +13,23 @@ import os
 import sys
 import json
 import shutil
+import argparse
 import requests
 import time
 import datetime as dt
 import hashlib
+
+parser = argparse.ArgumentParser(description='OnlyFans Downloader')
+parser.add_argument('-p', '--path', dest='PROFILE_PATH', required=False, type=str, default='profiles',
+                    help='path to save profile content')
+parser.add_argument('-a', '--auth', dest='AUTH_FILE', required=False, type=str, default='auth.json',
+                    help='path to auth json file')
+parser.add_argument('--all', help='download content from all models found', action="store_true")
+
+args = parser.parse_args()
+
+PROFILE_PATH = args.PROFILE_PATH + '/'
+AUTH_FILE = args.AUTH_FILE
 
 # maximum number of posts to index
 # DONT CHANGE THAT
@@ -47,7 +60,7 @@ def assure_dir(path):
 
 # Create Auth with Json
 def create_auth():
-    with open("auth.json") as f:
+    with open(AUTH_FILE) as f:
         ljson = json.load(f)
     return {
         "Accept": "application/json, text/plain, */*",
@@ -186,7 +199,7 @@ def select_sub():
         exit()
 
     # Select Model
-    if ARG1 == "all":
+    if args.all:
         return ALL_LIST
     MODELS = str((input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")))
     if MODELS == "0":
@@ -203,7 +216,7 @@ def download_public_files():
         id = get_id_from_path(source)
         file_type = re.findall("\.\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
-        if not os.path.isfile("profiles/" + PROFILE + path):
+        if not os.path.isfile(PROFILE_PATH + PROFILE + path):
             print("Downloading " + public_file + "...")
             download_file(PROFILE_INFO[public_file], path)
             global new_files
@@ -228,7 +241,7 @@ def download_media(media, is_archived):
         path = "/archived/" + media["type"] + "s/" + id + ext
     else:
         path = "/" + media["type"] + "s/" + id + ext
-    if not os.path.isfile("profiles/" + PROFILE + path):
+    if not os.path.isfile(PROFILE_PATH + PROFILE + path):
         # print(path)
         global new_files
         new_files += 1
@@ -238,7 +251,7 @@ def download_media(media, is_archived):
 # helper to generally download files
 def download_file(source, path):
     r = requests.get(source, stream=True)
-    with open("profiles/" + PROFILE + path, 'wb') as f:
+    with open(PROFILE_PATH + PROFILE + path, 'wb') as f:
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
@@ -318,12 +331,6 @@ if __name__ == "__main__":
     print("~    HACKERS GUNNA HACK    ~")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-    # Gather inputs
-    if len(sys.argv) != 2:
-        ARG1 = ""
-    else:
-        ARG1 = sys.argv[1]
-
     # Get the rules for the signed headers dynamically, as they may be fluid
     dynamic_rules = requests.get(
         'https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
@@ -342,19 +349,19 @@ if __name__ == "__main__":
 
         print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
-        if os.path.isdir("profiles/" + PROFILE):
+        if os.path.isdir(PROFILE_PATH + PROFILE):
             print("\nThe folder profiles/" + PROFILE + " exists.")
             print("Media already present will not be re-downloaded.")
 
-        assure_dir("profiles")
-        assure_dir("profiles/" + PROFILE)
-        assure_dir("profiles/" + PROFILE + "/avatar")
-        assure_dir("profiles/" + PROFILE + "/header")
-        assure_dir("profiles/" + PROFILE + "/photos")
-        assure_dir("profiles/" + PROFILE + "/videos")
-        assure_dir("profiles/" + PROFILE + "/archived")
-        assure_dir("profiles/" + PROFILE + "/archived/photos")
-        assure_dir("profiles/" + PROFILE + "/archived/videos")
+        assure_dir(PROFILE_PATH)
+        assure_dir(PROFILE_PATH + PROFILE)
+        assure_dir(PROFILE_PATH + PROFILE + "/avatar")
+        assure_dir(PROFILE_PATH + PROFILE + "/header")
+        assure_dir(PROFILE_PATH + PROFILE + "/photos")
+        assure_dir(PROFILE_PATH + PROFILE + "/videos")
+        assure_dir(PROFILE_PATH + PROFILE + "/archived")
+        assure_dir(PROFILE_PATH + PROFILE + "/archived/photos")
+        assure_dir(PROFILE_PATH + PROFILE + "/archived/videos")
 
         # first save profile info
         print("Saving profile info...")
@@ -371,7 +378,7 @@ if __name__ == "__main__":
             "lastSeen": PROFILE_INFO["lastSeen"]
         }
 
-        with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
+        with open(PROFILE_PATH + PROFILE + "/info.json", 'w') as infojson:
             json.dump(sinf, infojson)
 
         download_public_files()
