@@ -283,43 +283,29 @@ def download_posts(cur_count, posts, is_archived):
     return cur_count
 
 
-def get_all_videos(videos):
-    len_vids = len(videos)
-    has_more_videos = False
-    if len_vids == 50:
-        has_more_videos = True
+def get_all_media(media_type):
+    media_types = ["photos", "videos", "archived"]
+    if media_type not in media_types:
+        print(f'Unsupported media type: {media_type}')
+        return []
+    media = []
+    has_more_media = True
 
-    while has_more_videos:
-        has_more_videos = False
-        len_vids = len(videos)
-        extra_video_posts = api_request("/users/" + PROFILE_ID + "/posts/videos",
-                                        getdata={"limit": str(POST_LIMIT), "order": "publish_date_desc",
-                                                 "beforePublishTime": videos[len_vids - 1]["postedAtPrecise"]}
-                                        )
-        videos.extend(extra_video_posts)
-        if len(extra_video_posts) == 50:
-            has_more_videos = True
+    while has_more_media:
+        has_more_media = False
+        len_media = len(media)
+        getdata = {
+            "limit": str(POST_LIMIT),
+            "order": "publish_date_desc",
+            }
+        if len_media > 0:
+            getdata["beforePublishTime"] = media[len_media - 1]["postedAtPrecise"]
+        media_posts = api_request(f"/users/{PROFILE_ID}/posts/{media_type}", getdata=getdata)
+        media.extend(media_posts)
+        if len(media_posts) == 50:
+            has_more_media = True
 
-    return videos
-
-def get_all_photos(images):
-    len_imgs = len(images)
-    has_more_images = False
-    if len_imgs == 50:
-        has_more_images = True
-
-    while has_more_images:
-        has_more_images = False
-        len_imgs = len(images)
-        extra_img_posts = api_request("/users/" + PROFILE_ID + "/posts/photos",
-                                        getdata={"limit": str(POST_LIMIT), "order": "publish_date_desc",
-                                                 "beforePublishTime": images[len_imgs - 1]["postedAtPrecise"]}
-                                        )
-        images.extend(extra_img_posts)
-        if len(extra_img_posts) == 50:
-            has_more_images = True
-
-    return images
+    return media
 
 
 if __name__ == "__main__":
@@ -392,15 +378,13 @@ if __name__ == "__main__":
 
         # get all user posts
         print("Finding photos...", end=' ', flush=True)
-        photos = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
-        photo_posts = get_all_photos(photos)
+        photo_posts = get_all_media("photos")
         print("Found " + str(len(photo_posts)) + " photos.")
         print("Finding videos...", end=' ', flush=True)
-        videos = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
-        video_posts = get_all_videos(videos)
+        video_posts = get_all_media("videos")
         print("Found " + str(len(video_posts)) + " videos.")
         print("Finding archived content...", end=' ', flush=True)
-        archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
+        archived_posts = get_all_media("archived")
         print("Found " + str(len(archived_posts)) + " archived posts.")
         postcount = len(photo_posts) + len(video_posts)
         archived_postcount = len(archived_posts)
