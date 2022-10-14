@@ -157,7 +157,7 @@ def get_user_info(profile):
     if "error" in info:
         print("\nERROR: " + info["error"]["message"])
         # bail, we need info for both profiles to be correct
-        exit()
+        return None
     return info
 
 # to get subscribesCount for displaying all subs
@@ -345,6 +345,8 @@ if __name__ == "__main__":
     for M in SELECTED_MODELS:
         PROFILE = sub_dict[int(M)]
         PROFILE_INFO = get_user_info(PROFILE)
+        if not PROFILE_INFO:
+            continue
         PROFILE_ID = str(PROFILE_INFO["id"])
 
         print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
