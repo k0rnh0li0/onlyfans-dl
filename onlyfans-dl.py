@@ -386,7 +386,7 @@ if __name__ == "__main__":
         }
 
         with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
-            json.dump(sinf, infojson, ensure_ascii=True)
+            json.dump(sinf, infojson, ensure_ascii=False)
 
         download_public_files()
 
