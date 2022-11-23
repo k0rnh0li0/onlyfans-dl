@@ -11,6 +11,7 @@
 # - implemented SAVE_DIR for determining save location
 # - removed exit() on scraping all profiles when one profile had been deactivated
 # - using dynamically fetched app_token
+# - refined input prompt (hint for comma-separated list added)
 #
 # See README for help/info.
 #
@@ -59,6 +60,9 @@ SAVING_DIRS = {
 MEDIA_TYPES = ['photo', 'video', 'gif']
 SAVING_DIRS |= { mt : "/" + mt + "s" for mt in MEDIA_TYPES }
 SAVING_DIRS |= { "archived-" + mt : "/archived/" + mt + "s" for mt in MEDIA_TYPES }
+# uncomment following lines to save gif into video folder (gif's are saved as mp4 by OF anyway)
+#SAVING_DIRS['gif'] = SAVING_DIRS['video']
+#SAVING_DIRS['archived-gif'] = SAVING_DIRS['archived-video']
 
 # helper function to make sure a dir is present
 def assure_dir(path):
@@ -453,4 +457,3 @@ if __name__ == "__main__":
         # remove non-filled directories to keep profile folders clean
         print("\nCleaning up...")
         delete_empty_folders (SAVE_DIR)
-        
