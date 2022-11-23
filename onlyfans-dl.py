@@ -39,11 +39,55 @@ PROFILE = ""
 PROFILE_INFO = {}
 PROFILE_ID = ""
 
+# local target location (save directory, trailing slash is mandatory)
+SAVE_DIR = "../"
+
+# do not change this dict, except you know what you're doing
+SAVING_DIRS = {
+    "root": "",
+    "avatar": "/avatar",
+    "header": "/header",
+    "photo": "/photos",
+    "video": "/videos",
+    "archived": "/archived",
+    "archived-photo": "/archived/photos",
+    "archived-video": "/archived/videos",
+    "archived": "/archived",
+    }
 
 # helper function to make sure a dir is present
 def assure_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
+
+# helper for deleting empty folders after download
+def delete_empty_folders(root):
+    deleted = []
+    for current_dir, subdirs, files in os.walk(root, topdown=False):
+        still_has_subdirs = False
+        for subdir in subdirs:
+            if os.path.join(current_dir, subdir) not in deleted:
+                still_has_subdirs = True
+    
+        if not any(files) and not still_has_subdirs:
+            print(current_dir + " deleted.", end='\r', flush=True)
+            os.rmdir(current_dir)
+            deleted.append(current_dir)
+    
+    if len(deleted) > 0:
+        if len(deleted) == 1:
+            output = str (len(deleted)) + " empty folder deleted."
+        else:
+            output = str (len(deleted)) + " empty folders deleted."
+
+        max_str = max (deleted, key=len) + " deleted."
+        while len (output) < len (max_str):
+            output += " "
+    else:
+        output = "Nothing to do."
+
+    print(output)
+    return deleted
 
 # Create Auth with Json
 def create_auth():
@@ -202,8 +246,8 @@ def download_public_files():
             continue
         id = get_id_from_path(source)
         file_type = re.findall("\.\w+", source)[-1]
-        path = "/" + public_file + "/" + id + file_type
-        if not os.path.isfile("profiles/" + PROFILE + path):
+        path = SAVING_DIRS[public_file] + "/" + id + file_type
+        if not os.path.isfile(SAVE_DIR + PROFILE + path):
             print("Downloading " + public_file + "...")
             download_file(PROFILE_INFO[public_file], path)
             global new_files
@@ -225,10 +269,10 @@ def download_media(media, is_archived):
     ext = ext[0][:-1]
 
     if is_archived:
-        path = "/archived/" + media["type"] + "s/" + id + ext
+        path = SAVING_DIRS["archived-" + media["type"]] + "/" + id + ext
     else:
-        path = "/" + media["type"] + "s/" + id + ext
-    if not os.path.isfile("profiles/" + PROFILE + path):
+        path = SAVING_DIRS[media["type"]] + "/" + id + ext
+    if not os.path.isfile(SAVE_DIR + PROFILE + path):
         # print(path)
         global new_files
         new_files += 1
@@ -238,7 +282,7 @@ def download_media(media, is_archived):
 # helper to generally download files
 def download_file(source, path):
     r = requests.get(source, stream=True)
-    with open("profiles/" + PROFILE + path, 'wb') as f:
+    with open(SAVE_DIR + PROFILE + path, 'wb') as f:
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
@@ -321,16 +365,7 @@ def get_all_photos(images):
 
     return images
 
-
 if __name__ == "__main__":
-
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print("~ I AM THE GREAT KORNHOLIO ~")
-    print("~  ARE U THREATENING ME??  ~")
-    print("~                          ~")
-    print("~    COOMERS GUNNA COOM    ~")
-    print("~    HACKERS GUNNA HACK    ~")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # Gather inputs
     if len(sys.argv) != 2:
@@ -354,21 +389,15 @@ if __name__ == "__main__":
         PROFILE_INFO = get_user_info(PROFILE)
         PROFILE_ID = str(PROFILE_INFO["id"])
 
-        print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
+        print("\nonlyfans-dl is downloading content to " + SAVE_DIR + PROFILE + "!\n")
 
-        if os.path.isdir("profiles/" + PROFILE):
-            print("\nThe folder profiles/" + PROFILE + " exists.")
+        if os.path.isdir(SAVE_DIR + PROFILE):
+            print("\nThe folder " + SAVE_DIR + PROFILE + " exists.")
             print("Media already present will not be re-downloaded.")
 
-        assure_dir("profiles")
-        assure_dir("profiles/" + PROFILE)
-        assure_dir("profiles/" + PROFILE + "/avatar")
-        assure_dir("profiles/" + PROFILE + "/header")
-        assure_dir("profiles/" + PROFILE + "/photos")
-        assure_dir("profiles/" + PROFILE + "/videos")
-        assure_dir("profiles/" + PROFILE + "/archived")
-        assure_dir("profiles/" + PROFILE + "/archived/photos")
-        assure_dir("profiles/" + PROFILE + "/archived/videos")
+        assure_dir(SAVE_DIR[:-1])
+        for value in SAVING_DIRS.values():
+            assure_dir(SAVE_DIR + PROFILE + value)
 
         # first save profile info
         print("Saving profile info...")
@@ -385,11 +414,11 @@ if __name__ == "__main__":
             "lastSeen": PROFILE_INFO["lastSeen"]
         }
 
-        with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
+        with open(SAVE_DIR + PROFILE + "/info.json", 'w') as infojson:
             json.dump(sinf, infojson)
-
+        
         download_public_files()
-
+        
         # get all user posts
         print("Finding photos...", end=' ', flush=True)
         photos = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
@@ -420,3 +449,8 @@ if __name__ == "__main__":
         download_posts(cur_count, archived_posts, True)
 
         print("Downloaded " + str(new_files) + " new files.")
+
+        # remove non-filled directories to keep profile folders clean
+        print("\nCleaning up...")
+        delete_empty_folders (SAVE_DIR)
+        
