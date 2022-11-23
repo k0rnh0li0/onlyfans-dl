@@ -2,6 +2,15 @@
 #
 # OnlyFans Profile Downloader/Archiver
 # KORNHOLIO 2020
+# XoursCode 2022
+# - refactored api_request (thx to @freakmaxi)
+# - added GIF support (treated as videos by OF, where ignored but saved separatly now)
+# - added deletion of empty folders after scraping
+# - added MEDIA_TYPES for easily disable or enable a specific content type
+# - implemented SAVING_DIRS dict
+# - implemented SAVE_DIR for determining save location
+# - removed exit() on scraping all profiles when one profile had been deactivated
+# - using dynamically fetched app_token
 #
 # See README for help/info.
 #
@@ -20,15 +29,11 @@ import hashlib
 
 # maximum number of posts to index
 # DONT CHANGE THAT
-POST_LIMIT = 100
+POST_LIMIT = 10
 
 # api info
 URL = "https://onlyfans.com"
 API_URL = "/api2/v2"
-
-# \TODO dynamically get app token
-# Note: this is not an auth token
-APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
 
 # user info from /users/customer
 USER_INFO = {}
@@ -47,13 +52,13 @@ SAVING_DIRS = {
     "root": "",
     "avatar": "/avatar",
     "header": "/header",
-    "photo": "/photos",
-    "video": "/videos",
-    "archived": "/archived",
-    "archived-photo": "/archived/photos",
-    "archived-video": "/archived/videos",
-    "archived": "/archived",
+    "archived": "/archived"
     }
+
+# add or remove media types here to be more specific on downloads
+MEDIA_TYPES = ['photo', 'video', 'gif']
+SAVING_DIRS |= { mt : "/" + mt + "s" for mt in MEDIA_TYPES }
+SAVING_DIRS |= { "archived-" + mt : "/archived/" + mt + "s" for mt in MEDIA_TYPES }
 
 # helper function to make sure a dir is present
 def assure_dir(path):
@@ -90,7 +95,7 @@ def delete_empty_folders(root):
     return deleted
 
 # Create Auth with Json
-def create_auth():
+def create_auth(app_token):
     with open("auth.json") as f:
         ljson = json.load(f)
     return {
@@ -100,14 +105,14 @@ def create_auth():
         "user-id": ljson["user-id"],
         "x-bc": ljson["x-bc"],
         "Cookie": "sess=" + ljson["sess"],
-        "app-token": APP_TOKEN
+        "app-token": app_token
     }
 
 
 # Every API request must be signed
 def create_signed_headers(link, queryParams):
     global API_HEADER
-    path = "/api2/v2" + link
+    path = API_URL + link
     if (queryParams):
         query = '&'.join('='.join((key, val)) for (key, val) in queryParams.items())
         path = f"{path}?{query}"
@@ -143,28 +148,20 @@ def api_request(endpoint, getdata=None, postdata=None, getparams=None):
                                      headers=API_HEADER,
                                      params=getparams).json()
             posts_num = len(list_base)
-
-            if posts_num >= POST_LIMIT:
-                beforePublishTime = list_base[POST_LIMIT - 1]['postedAtPrecise']
+            
+            while posts_num > 0:
+                beforePublishTime = list_base[len(list_base) - 1]['postedAtPrecise']
                 getparams['beforePublishTime'] = beforePublishTime
 
-                while posts_num == POST_LIMIT:
-                    # Extract posts
-                    create_signed_headers(endpoint, getparams)
-                    list_extend = requests.get(URL + API_URL + endpoint,
-                                               headers=API_HEADER,
-                                               params=getparams).json()
-                    posts_num = len(list_extend)
-                    # Merge with previous posts
+                # Extract posts
+                create_signed_headers(endpoint, getparams)
+                list_extend = requests.get(URL + API_URL + endpoint,
+                                           headers=API_HEADER,
+                                           params=getparams).json()
+                posts_num = len(list_extend)
+                if posts_num > 0:
                     list_base.extend(list_extend)
-
-                    if posts_num < POST_LIMIT:
-                        break
-
-                    # Re-add again the updated beforePublishTime/postedAtPrecise params
-                    beforePublishTime = list_extend[posts_num - 1]['postedAtPrecise']
-                    getparams['beforePublishTime'] = beforePublishTime
-
+                
             return list_base
         else:
             create_signed_headers(endpoint, getparams)
@@ -221,10 +218,13 @@ def select_sub():
     SUBS = get_subs()
     sub_dict.update({"0": "*** Download All Models ***"})
     ALL_LIST = []
+
     for i in range(1, len(SUBS)+1):
-                ALL_LIST.append(i)
+        ALL_LIST.append(i)
+
     for i in range(0, len(SUBS)):
         sub_dict.update({i+1: SUBS[i]["username"]})
+
     if len(sub_dict) == 1:
         print('No models subbed')
         exit()
@@ -232,7 +232,8 @@ def select_sub():
     # Select Model
     if ARG1 == "all":
         return ALL_LIST
-    MODELS = str((input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")))
+    
+    MODELS = str((input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model (comma-separated list is allowed)\n")))
     if MODELS == "0":
         return ALL_LIST
     else:
@@ -259,7 +260,7 @@ def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if (media["type"] != "photo" and media["type"] != "video") or not media['canView']:
+    if media["type"] not in MEDIA_TYPES or not media['canView']:
         return
 
     # find extension
@@ -267,11 +268,10 @@ def download_media(media, is_archived):
     if len(ext) == 0:
         return
     ext = ext[0][:-1]
-
-    if is_archived:
-        path = SAVING_DIRS["archived-" + media["type"]] + "/" + id + ext
-    else:
-        path = SAVING_DIRS[media["type"]] + "/" + id + ext
+            
+    path = SAVING_DIRS["archived-" + media["type"]] if is_archived else SAVING_DIRS[media["type"]]
+    path += "/" + id + ext
+    
     if not os.path.isfile(SAVE_DIR + PROFILE + path):
         # print(path)
         global new_files
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     dynamic_rules = requests.get(
         'https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
     # Create Header
-    API_HEADER = create_auth()
+    API_HEADER = create_auth(dynamic_rules['app_token'])
 
     # Select sub
     sub_dict = {}
@@ -435,7 +435,7 @@ if __name__ == "__main__":
         archived_postcount = len(archived_posts)
         if postcount + archived_postcount == 0:
             print("ERROR: 0 posts found.")
-            exit()
+            continue
 
         total_count = postcount + archived_postcount
 
