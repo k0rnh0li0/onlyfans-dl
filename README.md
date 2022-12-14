@@ -26,26 +26,27 @@ LOOK: `python -m pip install requests`
 If you have installed requests and it still doesn't work, then this is an issue with your local environment, not onlyfans-dl.
 
 ## Usage
-First make sure to set your session variables in auth.json first.
+First, make sure to set your session variables in `auth.json`.
 
 `./onlyfans-dl.py`
 
 ## Session Variables
 Requests to the API now need to be signed. This is an obfuscation technique from the developers to discourage scraping. Thanks for the most recent patch goes to [DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans).
 
-You need your browser's __user-agent__, onlyfans **sess**ion cookie, __x-bc__ HTTP header, and **user-id**. Here's how to get them
+You need your browser's __user-agent__, onlyfans **sess**ion cookie, __x-bc__ HTTP header, and **user-id** HTTP header. Here's how to get them:
 
-- Get your user-agent here [ipchicken](https://ipchicken.com/)
+- Get your user-agent here: [ipchicken](https://ipchicken.com/)
 - Session Cookie
-  - Login to OnlyFans as normal
-  - Open the dev console Storage Inspector (`SHIFT+F9` on FireFox). or the __Application__ tab of Chrome DevTools
-  - Click Cookies -> https://onlyfans.com
-  - Copy the value of the `sess` cookie
+  1. Login to OnlyFans as normal
+  2. Open the dev console Storage Inspector (`SHIFT+F9` on FireFox). or the __Application__ tab of Chrome DevTools
+  3. Click Cookies -> https://onlyfans.com
+  4. Copy the value of the `sess` cookie
 - x-bc and user-id
-  - Login to OnlyFans, goto home page
-  - Open dev console `F12` -> Network tab (`Ctrl+Shift+E` in FireFox)
-  - Click __Headers__ sub-tab (default)
-  - Click on one of the JSON elements (may need to refresh page) and look under __request headers__ on the right
+  1. Login to OnlyFans
+  2. Open dev console `F12` -> Network tab (`Ctrl+Shift+E` in FireFox)
+  3. Go to the [home page](https://onlyfans.com/)
+  4. In dev tools, click __Headers__ sub-tab (default)
+  5. Click on one of the JSON elements (may need to refresh page) and look under __request headers__ on the right. The `hints` request is a good request to look at, as not all requests have both headers.
 
 There are variables for each of these values at the top of the script. Make sure to update them every time you login or your browser updates.
 
