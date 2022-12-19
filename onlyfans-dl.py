@@ -246,11 +246,20 @@ def download_media(media, is_archived):
 
 # helper to generally download files
 def download_file(source, path):
-    r = requests.get(source, stream=True)
-    with open("profiles/" + PROFILE + path, 'wb') as f:
-        r.raw.decode_content = True
-        shutil.copyfileobj(r.raw, f)
-
+    try:
+        r = requests.get(source, stream=True)
+        if r.status_code == 200:
+            with open("profiles/" + PROFILE + path, 'wb') as f:
+                r.raw.decode_content = True
+                shutil.copyfileobj(r.raw, f)
+        else:
+            print("\nThere was error when downloading media, waiting 1 minute before continuing...\n")
+            time.sleep(60)
+            download_file(source, path)
+    except requests.RequestException:
+        print("\nThere was error connecting to OnlyFans site, waiting 1 minute before continuing...\n")
+        time.sleep(60)
+        download_file(source, path)
 
 def get_id_from_path(path):
     last_index = path.rfind("/")
