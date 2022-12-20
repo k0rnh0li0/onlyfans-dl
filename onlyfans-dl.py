@@ -18,6 +18,10 @@ import time
 import datetime as dt
 import hashlib
 
+# change working dir to script dir
+Path = (os.path.split(os.path.realpath(__file__))[0] + "/").replace("\\\\", "/").replace("\\", "/")
+os.chdir(Path)
+
 # maximum number of posts to index
 # DONT CHANGE THAT
 POST_LIMIT = 100
