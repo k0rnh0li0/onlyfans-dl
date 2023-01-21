@@ -17,6 +17,7 @@ import requests
 import time
 import datetime as dt
 import hashlib
+import argparse
 
 # maximum number of posts to index
 # DONT CHANGE THAT
@@ -124,7 +125,6 @@ def api_request(endpoint, getdata=None, postdata=None, getparams=None):
             return list_base
         else:
             create_signed_headers(endpoint, getparams)
-            print('x')
             return requests.get(URL + API_URL + endpoint,
                                 headers=API_HEADER,
                                 params=getparams)
@@ -186,7 +186,7 @@ def select_sub():
         exit()
 
     # Select Model
-    if ARG1 == "all":
+    if DO_ALL == True:
         return ALL_LIST
     MODELS = str((input('\n'.join('{} | {}'.format(key, value) for key, value in sub_dict.items()) + "\nEnter number to download model\n")))
     if MODELS == "0":
@@ -229,7 +229,6 @@ def download_media(media, is_archived):
         type = "video"
     else:
         type = media["type"]
-
 
     if is_archived:
         path = "/archived/"
@@ -342,10 +341,18 @@ if __name__ == "__main__":
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
     # Gather inputs
-    if len(sys.argv) != 2:
-        ARG1 = ""
-    else:
-        ARG1 = sys.argv[1]
+    parser = argparse.ArgumentParser(description='onlyfans-dl optional arguments')
+    parser.add_argument("-a","--all", help="When set, process all models",default=False, action='store_true')
+    photovideo = parser.add_mutually_exclusive_group()
+    photovideo.add_argument("-v","--video","--videos", help="Set this flag to ONLY download videos", dest="download", action='store_const', const="video")
+    photovideo.add_argument("-p","--photo","--photos", help="Set this flag to ONLY download photos", dest="download", action='store_const', const="photo")
+    photovideo.add_argument("-b","--both", help="Default -- download both photos and videos", dest="download", action='store_const', const="both")
+    parser.set_defaults(download="both")
+    args = parser.parse_args()
+
+    DOWNLOAD=args.download
+    DO_ALL=args.all
+    print("DOWNLOAD: %s"%DOWNLOAD)
 
     # Get the rules for the signed headers dynamically, as they may be fluid
     dynamic_rules = requests.get(
@@ -398,16 +405,18 @@ if __name__ == "__main__":
             json.dump(sinf, infojson)
 
         download_public_files()
-
+        photo_posts,video_posts="",""
         # get all user posts
-        print("Finding photos...", end=' ', flush=True)
-        photos = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
-        photo_posts = get_all_photos(photos)
-        print("Found " + str(len(photo_posts)) + " photos.")
-        print("Finding videos...", end=' ', flush=True)
-        videos = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
-        video_posts = get_all_videos(videos)
-        print("Found " + str(len(video_posts)) + " videos.")
+        if DOWNLOAD=="photo" or DOWNLOAD=="both":
+            print("Finding photos...", end=' ', flush=True)
+            photos = api_request("/users/" + PROFILE_ID + "/posts/photos", getdata={"limit": str(POST_LIMIT)})
+            photo_posts = get_all_photos(photos)
+            print("Found " + str(len(photo_posts)) + " photos.")
+        if DOWNLOAD=="video" or DOWNLOAD=="both":
+            print("Finding videos...", end=' ', flush=True)
+            videos = api_request("/users/" + PROFILE_ID + "/posts/videos", getdata={"limit": str(POST_LIMIT)})
+            video_posts = get_all_videos(videos)
+            print("Found " + str(len(video_posts)) + " videos.")
         print("Finding archived content...", end=' ', flush=True)
         archived_posts = api_request("/users/" + PROFILE_ID + "/posts/archived", getdata={"limit": str(POST_LIMIT)})
         print("Found " + str(len(archived_posts)) + " archived posts.")
@@ -415,7 +424,7 @@ if __name__ == "__main__":
         archived_postcount = len(archived_posts)
         if postcount + archived_postcount == 0:
             print("ERROR: 0 posts found.")
-            exit()
+            continue
 
         total_count = postcount + archived_postcount
 
@@ -423,9 +432,11 @@ if __name__ == "__main__":
 
         # get start time for estimation purposes
         starttime = time.time()
-
-        cur_count = download_posts(1, photo_posts, False)
-        cur_count = download_posts(cur_count, video_posts, False)
+        cur_count=1
+        if DOWNLOAD=="photo" or DOWNLOAD=="both":
+            cur_count = download_posts(cur_count, photo_posts, False)
+        if DOWNLOAD=="video" or DOWNLOAD=="both":
+            cur_count = download_posts(cur_count, video_posts, False)
         download_posts(cur_count, archived_posts, True)
 
         print("Downloaded " + str(new_files) + " new files.")
