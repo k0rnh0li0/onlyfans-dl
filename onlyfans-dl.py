@@ -219,7 +219,10 @@ def download_media(media, is_archived):
         return
 
     # find extension
-    ext = re.findall('\.\w+\?', source)
+    try:
+        ext = re.findall('\.\w+\?', source)
+    except TypeError:
+        return
     if len(ext) == 0:
         return
     ext = ext[0][:-1]
