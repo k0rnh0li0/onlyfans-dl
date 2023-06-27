@@ -33,9 +33,6 @@ APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
 # user info from /users/customer
 USER_INFO = {}
 
-# output directory
-OUTPUT_DIR = "profiles/"
-
 # target profile
 PROFILE = ""
 # profile data from /users/<profile>
@@ -47,24 +44,6 @@ PROFILE_ID = ""
 def assure_dir(path):
     if not os.path.isdir(path):
         os.mkdir(path)
-
-
-# Clean path when verifying directory
-def strip_trailing_slash(path):
-    if(path[-1] == "/"):
-        return path[:-1]
-    return path
-
-
-# Ensure that the selected path ends in a slash (ie, is a folder name)
-def clean_output_path(path):
-    if(path == ""):
-        return OUTPUT_DIR
-    path = path.replace("\\","/")
-    if(path[-1] != "/"):
-        return path + "/"
-    return path
-
 
 # Create Auth with Json
 def create_auth():
@@ -224,7 +203,7 @@ def download_public_files():
         id = get_id_from_path(source)
         file_type = re.findall("\.\w+", source)[-1]
         path = "/" + public_file + "/" + id + file_type
-        if not os.path.isfile(OUTPUT_DIR + PROFILE + path):
+        if not os.path.isfile("profiles/" + PROFILE + path):
             print("Downloading " + public_file + "...")
             download_file(PROFILE_INFO[public_file], path)
             global new_files
@@ -235,7 +214,7 @@ def download_public_files():
 def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
-    
+
     if (media["type"] != "photo" and media["type"] != "video" and media["type"] != "gif") or not media['canView'] or source is None:
         return
 
@@ -258,7 +237,7 @@ def download_media(media, is_archived):
         path = "/"
     path += type + "s/" + id + ext
 
-    if not os.path.isfile(OUTPUT_DIR + PROFILE + path):
+    if not os.path.isfile("profiles/" + PROFILE + path):
         # print(path)
         global new_files
         new_files += 1
@@ -268,7 +247,7 @@ def download_media(media, is_archived):
 # helper to generally download files
 def download_file(source, path):
     r = requests.get(source, stream=True)
-    with open(OUTPUT_DIR + PROFILE + path, 'wb') as f:
+    with open("profiles/" + PROFILE + path, 'wb') as f:
         r.raw.decode_content = True
         shutil.copyfileobj(r.raw, f)
 
@@ -374,10 +353,6 @@ if __name__ == "__main__":
     # Create Header
     API_HEADER = create_auth()
 
-    # Choose output path
-    TEMP_DIR = input("Enter a location to store downloaded files. Default is \"" + OUTPUT_DIR + "\".\n")
-    OUTPUT_DIR = clean_output_path(TEMP_DIR)
-
     # Select sub
     sub_dict = {}
     SELECTED_MODELS = select_sub()
@@ -388,21 +363,21 @@ if __name__ == "__main__":
         PROFILE_INFO = get_user_info(PROFILE)
         PROFILE_ID = str(PROFILE_INFO["id"])
 
-        print("\nonlyfans-dl is downloading content to " + OUTPUT_DIR + PROFILE + "!\n")
+        print("\nonlyfans-dl is downloading content to profiles/" + PROFILE + "!\n")
 
-        if os.path.isdir(OUTPUT_DIR + PROFILE):
-            print("\nThe folder " + OUTPUT_DIR + PROFILE + " exists.")
+        if os.path.isdir("profiles/" + PROFILE):
+            print("\nThe folder profiles/" + PROFILE + " exists.")
             print("Media already present will not be re-downloaded.")
 
-        assure_dir(strip_trailing_slash(OUTPUT_DIR))
-        assure_dir(OUTPUT_DIR + PROFILE)
-        assure_dir(OUTPUT_DIR + PROFILE + "/avatar")
-        assure_dir(OUTPUT_DIR + PROFILE + "/header")
-        assure_dir(OUTPUT_DIR + PROFILE + "/photos")
-        assure_dir(OUTPUT_DIR + PROFILE + "/videos")
-        assure_dir(OUTPUT_DIR + PROFILE + "/archived")
-        assure_dir(OUTPUT_DIR + PROFILE + "/archived/photos")
-        assure_dir(OUTPUT_DIR + PROFILE + "/archived/videos")
+        assure_dir("profiles")
+        assure_dir("profiles/" + PROFILE)
+        assure_dir("profiles/" + PROFILE + "/avatar")
+        assure_dir("profiles/" + PROFILE + "/header")
+        assure_dir("profiles/" + PROFILE + "/photos")
+        assure_dir("profiles/" + PROFILE + "/videos")
+        assure_dir("profiles/" + PROFILE + "/archived")
+        assure_dir("profiles/" + PROFILE + "/archived/photos")
+        assure_dir("profiles/" + PROFILE + "/archived/videos")
 
         # first save profile info
         print("Saving profile info...")
@@ -419,7 +394,7 @@ if __name__ == "__main__":
             "lastSeen": PROFILE_INFO["lastSeen"]
         }
 
-        with open(OUTPUT_DIR + PROFILE + "/info.json", 'w') as infojson:
+        with open("profiles/" + PROFILE + "/info.json", 'w') as infojson:
             json.dump(sinf, infojson)
 
         download_public_files()
