@@ -215,7 +215,7 @@ def download_media(media, is_archived):
     id = str(media["id"])
     source = media["source"]["source"]
 
-    if (media["type"] != "photo" and media["type"] != "video" and media["type"] != "gif") or not media['canView']:
+    if (media["type"] != "photo" and media["type"] != "video" and media["type"] != "gif") or not media['canView'] or source is None:
         return
 
     # find extension
