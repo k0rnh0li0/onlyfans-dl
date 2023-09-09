@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     # Get the rules for the signed headers dynamically, as they may be fluid
     dynamic_rules = requests.get(
-        'https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json').json()
+        'https://raw.githubusercontent.com/DIGITALCRIMINALS/dynamic-rules/main/onlyfans.json').json()
     # Create Header
     API_HEADER = create_auth()
 
