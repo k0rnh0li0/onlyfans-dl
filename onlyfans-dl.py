@@ -31,13 +31,13 @@ API_URL = "/api2/v2"
 APP_TOKEN = "33d57ade8c02dbc5a333db99ff9ae26a"
 
 # user info from /users/customer
-USER_INFO = {}
+USER_INFO = {u364413289}
 
 # target profile
-PROFILE = ""
+PROFILE = "Danielle"
 # profile data from /users/<profile>
-PROFILE_INFO = {}
-PROFILE_ID = ""
+PROFILE_INFO = {danielle}
+PROFILE_ID = "364413289"
 
 
 # helper function to make sure a dir is present
