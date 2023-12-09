@@ -47,19 +47,21 @@ def assure_dir(path):
 
 # Create Auth with Json
 def create_auth():
-    with open("auth.json") as f:
-        ljson = json.load(f)
-    return {
-        "Accept": "application/json, text/plain, */*",
-        "User-Agent": ljson["user-agent"],
-        "Accept-Encoding": "gzip, deflate",
-        "user-id": ljson["user-id"],
-        "x-bc": ljson["x-bc"],
-        "Cookie": "sess=" + ljson["sess"],
-        "app-token": APP_TOKEN
-    }
-
-
+    if os.path.exist("auth.json):                 
+        with open("auth.json") as f:
+            ljson = json.load(f)
+        return {
+            "Accept": "application/json, text/plain, */*",
+            "User-Agent": ljson["user-agent"],
+            "Accept-Encoding": "gzip, deflate",
+            "user-id": ljson["user-id"],
+            "x-bc": ljson["x-bc"],
+            "Cookie": "sess=" + ljson["sess"],
+            "app-token": APP_TOKEN
+        }
+    else:
+        print("auth.json does not exist")
+        
 # Every API request must be signed
 def create_signed_headers(link, queryParams):
     global API_HEADER
