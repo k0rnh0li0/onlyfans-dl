@@ -47,7 +47,7 @@ def assure_dir(path):
 
 # Create Auth with Json
 def create_auth():
-    if os.path.exist("auth.json):                 
+    if os.path.exists("auth.json"):                 
         with open("auth.json") as f:
             ljson = json.load(f)
         return {
